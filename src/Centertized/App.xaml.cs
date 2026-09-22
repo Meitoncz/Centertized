@@ -58,7 +58,10 @@ public partial class App : Application
         }
 
         _trayIcon = (TaskbarIcon)FindResource("TrayIcon");
-        _trayIcon.Icon = System.Drawing.SystemIcons.Application; // TODO Fáze 4b: nahradit vlastní ikonou appky
+        // Ikona appky je zapsaná jako <ApplicationIcon> v csproj (jde tedy i do .exe
+        // resource), tady se prostě znovu použije - žádná zvlášť kopírovaná kopie.
+        _trayIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location)
+            ?? System.Drawing.SystemIcons.Application;
         _trayIcon.ForceCreate();
 
         // Tray notification sink potřebuje hotovou tray ikonu, proto se Serilog

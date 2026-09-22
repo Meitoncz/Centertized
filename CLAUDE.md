@@ -152,10 +152,20 @@ access) — worth a human glance next time a Warning-level event fires for real.
 verified directly, but the toggle's click path itself wasn't (same "needs a human" gap
 as the hotkey capture UI). About page shows the real assembly version now.
 
-Still open from Phase 4: a real icon/branding pass (still using
-`System.Drawing.SystemIcons.Application` as a placeholder — this is a product-identity
-decision worth asking the user about rather than guessing at) and a first-run tray
-balloon to help users discover the icon exists.
+Icon done: `src/Centertized/Resources/icon.ico` (multi-size, PNG-in-ICO — 16 through 256
+px), a simple "viewfinder corners + center dot" design generated programmatically
+(System.Drawing/GDI+, source not kept in the repo — it was a scratch one-off, see git
+log if it needs regenerating/tweaking). Wired via `<ApplicationIcon>` in
+`Centertized.csproj` (so it's the .exe's own file icon too) and the tray icon loads it
+via `Icon.ExtractAssociatedIcon(...)` on the running exe rather than duplicating the
+file — one source of truth. User picked this as a placeholder in the "user's own logo
+later" sense — they may swap in their own icon eventually, but this one is a real,
+finished icon, not a stub. Verified by extracting the icon straight from the built .exe
+and inspecting it (a Read tool can view images directly — no human needed for this
+particular check, unlike most of the UI verification elsewhere in this file).
+
+Still open from Phase 4: a first-run tray balloon to help users discover the icon
+exists.
 
 Phase 5 (extensibility proof) is done, using the "toggle maximize/restore to previous
 position" idea from `IDEAS.md` as the real second action (`ToggleMaximizeAction`) rather

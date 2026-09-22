@@ -1,6 +1,9 @@
 using System.IO;
 using System.Windows;
-using System.Windows.Threading;
+using System.Windows.Interop;
+using Centertized.Core.Actions;
+using Centertized.Core.Hotkeys;
+using Centertized.Core.Settings;
 using Centertized.Views;
 using H.NotifyIcon;
 
@@ -13,11 +16,24 @@ public partial class App : Application
 {
     // Pevně dané GUID – slouží jen k odlišení naší appky v systému, nikdy neměnit.
     private const string SingleInstanceMutexName = "Global\\Centertized-9F1B1C2E-6C3B-4B7E-9A0E-9D6E9E7B2B10";
+    private const int WM_HOTKEY = 0x0312;
 
     private Mutex? _singleInstanceMutex;
     private bool _ownsSingleInstanceMutex;
     private TaskbarIcon? _trayIcon;
     private SettingsWindow? _settingsWindow;
+    private HwndSource? _hotkeyMessageSource;
+
+    /// <summary>
+    /// Bez DI kontejneru – appka je malá, takže sdílené instance (registry,
+    /// settings store, katalog akcí) jsou prostě statické, dostupné odkudkoliv
+    /// v UI projektu (Views/Controls).
+    /// </summary>
+    public static HotkeyActionRegistry HotkeyRegistry { get; private set; } = null!;
+
+    public static ISettingsStore SettingsStore { get; private set; } = null!;
+
+    public static WindowActionCatalog ActionCatalog { get; private set; } = null!;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -47,6 +63,59 @@ public partial class App : Application
         _trayIcon = (TaskbarIcon)FindResource("TrayIcon");
         _trayIcon.Icon = System.Drawing.SystemIcons.Application; // TODO Fáze 4: nahradit vlastní ikonou appky
         _trayIcon.ForceCreate();
+
+        InitializeHotkeys();
+    }
+
+    private void InitializeHotkeys()
+    {
+        // Skryté message-only okno jen pro příjem WM_HOTKEY – HWND_MESSAGE (-3) jako
+        // parent zajistí, že nemá vizuální stopu (žádné okno, žádná ikona na taskbaru).
+        var parameters = new HwndSourceParameters("CentertizedHotkeySink")
+        {
+            Width = 0,
+            Height = 0,
+            ParentWindow = new IntPtr(-3),
+        };
+        _hotkeyMessageSource = new HwndSource(parameters);
+        _hotkeyMessageSource.AddHook(HotkeyWndProc);
+
+        ActionCatalog = new WindowActionCatalog([new CenterActiveWindowAction()]);
+        HotkeyRegistry = new HotkeyActionRegistry(new Win32HotkeyRegistrar(), ActionCatalog, _hotkeyMessageSource.Handle);
+        SettingsStore = new JsonSettingsStore();
+
+        var settings = SettingsStore.Load();
+        foreach (var (actionId, hotkeyText) in settings.Hotkeys)
+        {
+            if (ActionCatalog.TryGetById(actionId) is null)
+            {
+                continue; // zkratka pro akci, která už v appce neexistuje (např. po update)
+            }
+
+            if (!Hotkey.TryParse(hotkeyText, out var hotkey))
+            {
+                WriteCrashLog(new FormatException($"Uložená zkratka '{hotkeyText}' pro akci '{actionId}' se nepodařila naparsovat."));
+                continue;
+            }
+
+            var result = HotkeyRegistry.TryBind(actionId, hotkey);
+            if (result.Outcome != HotkeyRegistrationOutcome.Success)
+            {
+                // TODO Fáze 4: místo logu tray notifikace, ať si toho uživatel všimne.
+                WriteCrashLog(new InvalidOperationException($"Nepodařilo se znovu zaregistrovat zkratku '{hotkeyText}' pro akci '{actionId}': {result.Outcome}."));
+            }
+        }
+    }
+
+    private IntPtr HotkeyWndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WM_HOTKEY)
+        {
+            HotkeyRegistry.Dispatch(wParam.ToInt32());
+            handled = true;
+        }
+
+        return IntPtr.Zero;
     }
 
     private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
@@ -89,6 +158,7 @@ public partial class App : Application
         // Bez explicitního Dispose by po ukončení appky mohla v tray liště zůstat
         // "duch" ikona až do prvního najetí myší na její místo.
         _trayIcon?.Dispose();
+        _hotkeyMessageSource?.Dispose(); // uvolní i všechny RegisterHotKey registrace na tomhle okně
         if (_ownsSingleInstanceMutex)
         {
             _singleInstanceMutex?.ReleaseMutex();

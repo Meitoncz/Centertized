@@ -1,0 +1,33 @@
+using System.Collections;
+
+namespace Centertized.Core.Actions;
+
+/// <summary>
+/// Jediné místo, kam se registrují nové akce. Shortcuts stránka v Nastavení se
+/// generuje přímo z tohohle seznamu – nová akce se tam objeví bez zásahu do XAML.
+/// </summary>
+public sealed class WindowActionCatalog : IReadOnlyList<IWindowAction>
+{
+    private readonly List<IWindowAction> _actions;
+
+    public WindowActionCatalog(IEnumerable<IWindowAction> actions)
+    {
+        _actions = actions.ToList();
+
+        var duplicateId = _actions.GroupBy(a => a.Id).FirstOrDefault(g => g.Count() > 1)?.Key;
+        if (duplicateId is not null)
+        {
+            throw new ArgumentException($"Duplicitní Id akce: '{duplicateId}'.", nameof(actions));
+        }
+    }
+
+    public int Count => _actions.Count;
+
+    public IWindowAction this[int index] => _actions[index];
+
+    public IWindowAction? TryGetById(string id) => _actions.FirstOrDefault(a => a.Id == id);
+
+    public IEnumerator<IWindowAction> GetEnumerator() => _actions.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}

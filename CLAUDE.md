@@ -93,9 +93,24 @@ history and it isn't in conversation context anymore.
 
 ## Current status
 
-Phase 0 (scaffold, tray icon, single instance) and Phase 1 (Settings window shell:
-FluentWindow + NavigationView + Mica + live theme sync) are done and manually verified
-by the user. Two cosmetic issues found during Phase 1 verification are tracked above
-under "Known issues" rather than blocking progress. Next up: Phase 2 (hotkey capture +
-registration + conflict detection) — see git log for exact commits, and the phased
-roadmap (Phase 0 → Phase 5) for what's still ahead.
+Phase 0 (scaffold, tray icon, single instance), Phase 1 (Settings window shell:
+FluentWindow + NavigationView + Mica + live theme sync), and Phase 2 (hotkey capture,
+registration, conflict detection, persistence) are done. Two cosmetic issues found
+during Phase 1 verification are tracked above under "Known issues" rather than blocking
+progress.
+
+Phase 2 core pipeline (JSON settings -> Hotkey.TryParse -> HotkeyActionRegistry.TryBind
+-> real RegisterHotKey -> WM_HOTKEY -> Dispatch -> IWindowAction.ExecuteAsync) was
+verified end-to-end without any GUI interaction: pre-seeded `settings.json` with a
+binding, launched the app, and used `keybd_event` (P/Invoke from PowerShell) to
+simulate the actual key combo — confirmed via `%AppData%\Centertized\logs\activity.log`
+that the action fired. This pattern (simulate real global input via `keybd_event`,
+check a log file for the effect) is reusable for testing hotkey-related behavior
+without needing a human to click/press anything. The one thing NOT covered this way is
+the live capture UI itself (`HotkeyCaptureControl` on the Shortcuts page reacting to
+an actual click + keypress) — that still needs a human, since it's real GUI interaction.
+
+`CenterActiveWindowAction.ExecuteAsync` is still a stub (just logs) — the real Win32
+centering logic is Phase 3. Next up: Phase 3 (window centering: `Win32WindowService`,
+DPI/multi-monitor correctness, elevated-window handling) — see the phased roadmap
+(Phase 0 → Phase 5) for what's still ahead, and git log for exact commits.

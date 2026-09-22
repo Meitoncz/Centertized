@@ -1,8 +1,31 @@
 <Page x:Class="Centertized.Views.Pages.ShortcutsPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:controls="clr-namespace:Centertized.Controls"
       Title="Shortcuts">
-    <Grid Margin="24">
-        <TextBlock Text="Shortcuts – coming in Phase 2." FontSize="18" />
-    </Grid>
+    <ItemsControl x:Name="ActionsList" Margin="24">
+        <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                <Border BorderThickness="0,0,0,1" BorderBrush="#22808080" Padding="0,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,24,0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding DisplayName}" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Description}" Opacity="0.7" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <controls:HotkeyCaptureControl Grid.Column="1"
+                                                        VerticalAlignment="Center"
+                                                        Tag="{Binding Id}"
+                                                        Loaded="OnCaptureControlLoaded"
+                                                        HotkeyCaptured="OnHotkeyCaptured" />
+                    </Grid>
+                </Border>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
 </Page>

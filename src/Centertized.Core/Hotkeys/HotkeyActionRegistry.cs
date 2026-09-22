@@ -1,6 +1,6 @@
-using System.Diagnostics;
 using Centertized.Core.Actions;
 using Centertized.Core.WindowManagement;
+using Microsoft.Extensions.Logging;
 
 namespace Centertized.Core.Hotkeys;
 
@@ -19,15 +19,17 @@ public sealed class HotkeyActionRegistry
     private readonly IntPtr _windowHandle;
     private readonly WindowActionCatalog _catalog;
     private readonly IWin32WindowService _windowService;
+    private readonly ILogger _logger;
     private readonly Dictionary<string, HotkeyBinding> _bindingsByActionId = new();
     private readonly Dictionary<int, string> _actionIdById = new();
     private int _nextId = 1;
 
-    public HotkeyActionRegistry(IHotkeyRegistrar registrar, WindowActionCatalog catalog, IWin32WindowService windowService, IntPtr windowHandle)
+    public HotkeyActionRegistry(IHotkeyRegistrar registrar, WindowActionCatalog catalog, IWin32WindowService windowService, ILogger logger, IntPtr windowHandle)
     {
         _registrar = registrar;
         _catalog = catalog;
         _windowService = windowService;
+        _logger = logger;
         _windowHandle = windowHandle;
     }
 
@@ -100,12 +102,13 @@ public sealed class HotkeyActionRegistry
     {
         try
         {
-            await action.ExecuteAsync(new WindowActionContext(_windowService, CancellationToken.None)).ConfigureAwait(false);
+            await action.ExecuteAsync(new WindowActionContext(_windowService, _logger, CancellationToken.None)).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            // Fáze 4: přes Serilog + tray notifikaci. Zatím ať to aspoň není úplně tiché.
-            Debug.WriteLine($"Akce '{action.Id}' spadla: {ex}");
+            // Warning, ne Error/Critical – appka běží dál, jen se tahle jedna akce
+            // nepovedla (a přes TrayNotificationSink se to zobrazí i jako tray toast).
+            _logger.LogWarning(ex, "Akce '{ActionId}' spadla.", action.Id);
         }
     }
 

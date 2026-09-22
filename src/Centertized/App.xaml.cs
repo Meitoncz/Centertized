@@ -1,12 +1,18 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Threading;
 using Centertized.Core.Actions;
 using Centertized.Core.Hotkeys;
 using Centertized.Core.Settings;
 using Centertized.Core.WindowManagement;
+using Centertized.Services;
 using Centertized.Views;
 using H.NotifyIcon;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Extensions.Logging;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Centertized;
 
@@ -24,6 +30,7 @@ public partial class App : Application
     private TaskbarIcon? _trayIcon;
     private SettingsWindow? _settingsWindow;
     private HwndSource? _hotkeyMessageSource;
+    private ILogger _logger = null!;
 
     /// <summary>
     /// Bez DI kontejneru – appka je malá, takže sdílené instance (registry,
@@ -40,17 +47,6 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        // Dočasné – plnohodnotné Serilog logování přijde ve Fázi 4. Zatím aspoň
-        // tohle, ať nespadlé výjimky nezmizí beze stopy (appka nemá konzoli).
-        DispatcherUnhandledException += (_, args) => WriteCrashLog(args.Exception);
-        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
-        {
-            if (args.ExceptionObject is Exception ex)
-            {
-                WriteCrashLog(ex);
-            }
-        };
-
         _singleInstanceMutex = new Mutex(initiallyOwned: true, name: SingleInstanceMutexName, createdNew: out var createdNew);
         _ownsSingleInstanceMutex = createdNew;
         if (!createdNew)
@@ -62,10 +58,52 @@ public partial class App : Application
         }
 
         _trayIcon = (TaskbarIcon)FindResource("TrayIcon");
-        _trayIcon.Icon = System.Drawing.SystemIcons.Application; // TODO Fáze 4: nahradit vlastní ikonou appky
+        _trayIcon.Icon = System.Drawing.SystemIcons.Application; // TODO Fáze 4b: nahradit vlastní ikonou appky
         _trayIcon.ForceCreate();
 
+        // Tray notification sink potřebuje hotovou tray ikonu, proto se Serilog
+        // konfiguruje až tady, ne úplně na začátku OnStartup.
+        ConfigureLogging();
+
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
+
         InitializeHotkeys();
+    }
+
+    private void ConfigureLogging()
+    {
+        var logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Centertized", "logs");
+
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Information()
+            .WriteTo.File(
+                Path.Combine(logDirectory, "centertized-.log"),
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 14)
+            .WriteTo.Sink(new TrayNotificationSink(_trayIcon!))
+            .CreateLogger();
+
+        // dispose: false - o ukončení Log.Logger se stará explicitně OnExit (Log.CloseAndFlush).
+        _logger = new SerilogLoggerFactory(Log.Logger, dispose: false).CreateLogger("Centertized");
+    }
+
+    private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        _logger.LogError(e.Exception, "Neošetřená výjimka na UI vlákně.");
+        // Appka běží na pozadí bez konzole - jedna spadlá akce/stránka nemá shodit
+        // celý proces, uživatel by o tom ani nevěděl.
+        e.Handled = true;
+    }
+
+    private void OnAppDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        if (e.ExceptionObject is Exception ex)
+        {
+            _logger.LogCritical(ex, "Neošetřená výjimka mimo UI vlákno - appka teď spadne.");
+        }
+
+        Log.CloseAndFlush();
     }
 
     private void InitializeHotkeys()
@@ -82,7 +120,7 @@ public partial class App : Application
         _hotkeyMessageSource.AddHook(HotkeyWndProc);
 
         ActionCatalog = new WindowActionCatalog([new CenterActiveWindowAction()]);
-        HotkeyRegistry = new HotkeyActionRegistry(new Win32HotkeyRegistrar(), ActionCatalog, new Win32WindowService(), _hotkeyMessageSource.Handle);
+        HotkeyRegistry = new HotkeyActionRegistry(new Win32HotkeyRegistrar(), ActionCatalog, new Win32WindowService(), _logger, _hotkeyMessageSource.Handle);
         SettingsStore = new JsonSettingsStore();
 
         var settings = SettingsStore.Load();
@@ -95,15 +133,16 @@ public partial class App : Application
 
             if (!Hotkey.TryParse(hotkeyText, out var hotkey))
             {
-                WriteCrashLog(new FormatException($"Uložená zkratka '{hotkeyText}' pro akci '{actionId}' se nepodařila naparsovat."));
+                _logger.LogWarning("Uložená zkratka '{HotkeyText}' pro akci '{ActionId}' se nepodařila naparsovat.", hotkeyText, actionId);
                 continue;
             }
 
             var result = HotkeyRegistry.TryBind(actionId, hotkey);
             if (result.Outcome != HotkeyRegistrationOutcome.Success)
             {
-                // TODO Fáze 4: místo logu tray notifikace, ať si toho uživatel všimne.
-                WriteCrashLog(new InvalidOperationException($"Nepodařilo se znovu zaregistrovat zkratku '{hotkeyText}' pro akci '{actionId}': {result.Outcome}."));
+                _logger.LogWarning(
+                    "Nepodařilo se znovu zaregistrovat zkratku '{HotkeyText}' pro akci '{ActionId}': {Outcome}.",
+                    hotkeyText, actionId, result.Outcome);
             }
         }
     }
@@ -146,14 +185,6 @@ public partial class App : Application
         Shutdown();
     }
 
-    private static void WriteCrashLog(Exception ex)
-    {
-        var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Centertized", "logs");
-        Directory.CreateDirectory(logDir);
-        var line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}{Environment.NewLine}{ex}{Environment.NewLine}{new string('-', 60)}{Environment.NewLine}";
-        File.AppendAllText(Path.Combine(logDir, "crash.log"), line);
-    }
-
     protected override void OnExit(ExitEventArgs e)
     {
         // Bez explicitního Dispose by po ukončení appky mohla v tray liště zůstat
@@ -165,6 +196,7 @@ public partial class App : Application
             _singleInstanceMutex?.ReleaseMutex();
         }
         _singleInstanceMutex?.Dispose();
+        Log.CloseAndFlush();
         base.OnExit(e);
     }
 }

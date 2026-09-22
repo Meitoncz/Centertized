@@ -133,7 +133,31 @@ worth knowing for next time:
   normal UAC settings before trusting the documented elevated-window limitation as
   confirmed rather than just "expected per Win32 docs."
 
-Next up: Phase 4 (autostart toggle, replace ad-hoc file logging with Serilog + global
-exception handling, tray notification on action failure, icon/branding polish) — see
-the phased roadmap (Phase 0 → Phase 5) for what's still ahead, and git log for exact
-commits.
+Phase 4 is mostly done: Serilog now backs all logging (`%AppData%\Centertized\logs\
+centertized-<date>.log`, rolling daily, 14-day retention) via `Microsoft.Extensions.
+Logging.ILogger` passed through `WindowActionContext`/`HotkeyActionRegistry` — Core
+only depends on the logging *abstractions* package, never Serilog directly, so it's
+still WPF/Serilog-free. `Services/TrayNotificationSink.cs` is a custom Serilog sink that
+turns any Warning+ log event into a tray balloon automatically — so
+`CenterActiveWindowAction` just logs normally (e.g. when `SetWindowPos` fails on a
+likely-elevated window) and the notification happens as a side effect of logging, no
+separate notification plumbing needed. Verified for real: made another process hold the
+same hotkey combo via `RegisterHotKey(IntPtr.Zero, ...)` (no window needed for that
+call), confirmed Centertized logs the expected Warning on startup rebind failure and
+keeps running (the old ad-hoc `WriteCrashLog`/`crash.log` is gone, fully replaced). The
+tray balloon's actual on-screen appearance was not visually confirmed (no screen
+access) — worth a human glance next time a Warning-level event fires for real.
+`AutostartService` (HKCU Run key, `Services/AutostartService.cs`) is wired into a
+`ToggleSwitch` on the General page; the registry read/write/delete mechanics were
+verified directly, but the toggle's click path itself wasn't (same "needs a human" gap
+as the hotkey capture UI). About page shows the real assembly version now.
+
+Still open from Phase 4: a real icon/branding pass (still using
+`System.Drawing.SystemIcons.Application` as a placeholder — this is a product-identity
+decision worth asking the user about rather than guessing at) and a first-run tray
+balloon to help users discover the icon exists.
+
+Next up: Phase 5 (extensibility proof — add one more trivial `IWindowAction`, e.g. the
+"toggle maximize/restore to previous position" idea from `IDEAS.md`, and confirm it only
+takes one new class + one catalog line) — see the phased roadmap (Phase 0 → Phase 5),
+and git log for exact commits.

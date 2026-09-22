@@ -1,6 +1,7 @@
 using Centertized.Core.Actions;
 using Centertized.Core.Hotkeys;
 using Centertized.Core.WindowManagement;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Centertized.Tests.Hotkeys;
 
@@ -9,11 +10,11 @@ public class HotkeyActionRegistryTests
     private static readonly Hotkey CenterHotkey = new(HotkeyModifiers.Control | HotkeyModifiers.Alt, (uint)'C');
     private static readonly Hotkey OtherHotkey = new(HotkeyModifiers.Control | HotkeyModifiers.Alt, (uint)'V');
 
-    // Testy tady neřeší window management, takže stačí reálná (nikdy nevolaná) instance.
+    // Testy tady neřeší window management/logování, takže stačí no-op implementace.
     private static readonly IWin32WindowService WindowService = new Win32WindowService();
 
     private static HotkeyActionRegistry CreateRegistry(IHotkeyRegistrar registrar, params IWindowAction[] actions) =>
-        new(registrar, new WindowActionCatalog(actions), WindowService, IntPtr.Zero);
+        new(registrar, new WindowActionCatalog(actions), WindowService, NullLogger.Instance, IntPtr.Zero);
 
     [Fact]
     public void TryBind_NewHotkey_Succeeds()

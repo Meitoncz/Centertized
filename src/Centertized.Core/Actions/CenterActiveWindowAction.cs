@@ -1,4 +1,5 @@
 using Centertized.Core.WindowManagement;
+using Microsoft.Extensions.Logging;
 
 namespace Centertized.Core.Actions;
 
@@ -20,7 +21,7 @@ public sealed class CenterActiveWindowAction : IWindowAction
 
         if (!windowService.IsEligibleForActions(hwnd))
         {
-            Log("přeskočeno – okno není způsobilé (vlastní okno appky, desktop, tool window...).");
+            context.Logger.LogDebug("Přeskočeno – okno {Handle} není způsobilé (vlastní okno appky, desktop, tool window...).", hwnd);
             return Task.CompletedTask;
         }
 
@@ -28,7 +29,7 @@ public sealed class CenterActiveWindowAction : IWindowAction
         {
             // Nic rozumného k centrování - okno se neobnovuje, ať appka nepřekvapí
             // uživatele vyskočením okna, které si sám neschoval.
-            Log("přeskočeno – okno je minimalizované.");
+            context.Logger.LogDebug("Přeskočeno – okno {Handle} je minimalizované.", hwnd);
             return Task.CompletedTask;
         }
 
@@ -41,23 +42,24 @@ public sealed class CenterActiveWindowAction : IWindowAction
             !windowService.TryGetWindowRect(hwnd, out var windowRect) ||
             !windowService.TryGetMonitorWorkArea(hwnd, out var workArea))
         {
-            Log("přeskočeno – nepodařilo se zjistit geometrii okna/monitoru.");
+            context.Logger.LogWarning("Nepodařilo se zjistit geometrii okna {Handle}/monitoru.", hwnd);
             return Task.CompletedTask;
         }
 
         var (left, top) = WindowCenteringCalculator.Calculate(workArea, visualBounds, windowRect);
         var moved = windowService.TrySetPosition(hwnd, left, top);
-        Log(moved ? $"okno přesunuto na ({left}, {top})." : "SetWindowPos selhal (např. zvýšené okno - viz CLAUDE.md).");
+
+        if (moved)
+        {
+            context.Logger.LogInformation("Okno {Handle} přesunuto na ({Left}, {Top}).", hwnd, left, top);
+        }
+        else
+        {
+            // Typicky zvýšené (admin) okno - UIPI, viz CLAUDE.md. Není to bug, který
+            // by šel odsud normálně "opravit".
+            context.Logger.LogWarning("SetWindowPos pro okno {Handle} selhal (pravděpodobně běží se zvýšenými právy).", hwnd);
+        }
 
         return Task.CompletedTask;
-    }
-
-    private static void Log(string message)
-    {
-        // Dočasné - Fáze 4 nahradí Serilogem. I bez debuggeru si tak jde ověřit,
-        // co akce udělala (nebo proč nic neudělala).
-        var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Centertized", "logs");
-        Directory.CreateDirectory(logDir);
-        File.AppendAllText(Path.Combine(logDir, "activity.log"), $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {ActionId} {message}{Environment.NewLine}");
     }
 }

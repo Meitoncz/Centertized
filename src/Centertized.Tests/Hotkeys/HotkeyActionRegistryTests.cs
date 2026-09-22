@@ -1,5 +1,6 @@
 using Centertized.Core.Actions;
 using Centertized.Core.Hotkeys;
+using Centertized.Core.WindowManagement;
 
 namespace Centertized.Tests.Hotkeys;
 
@@ -8,11 +9,17 @@ public class HotkeyActionRegistryTests
     private static readonly Hotkey CenterHotkey = new(HotkeyModifiers.Control | HotkeyModifiers.Alt, (uint)'C');
     private static readonly Hotkey OtherHotkey = new(HotkeyModifiers.Control | HotkeyModifiers.Alt, (uint)'V');
 
+    // Testy tady neřeší window management, takže stačí reálná (nikdy nevolaná) instance.
+    private static readonly IWin32WindowService WindowService = new Win32WindowService();
+
+    private static HotkeyActionRegistry CreateRegistry(IHotkeyRegistrar registrar, params IWindowAction[] actions) =>
+        new(registrar, new WindowActionCatalog(actions), WindowService, IntPtr.Zero);
+
     [Fact]
     public void TryBind_NewHotkey_Succeeds()
     {
         var action = new StubWindowAction("action-a");
-        var registry = new HotkeyActionRegistry(new FakeHotkeyRegistrar(), new WindowActionCatalog([action]), IntPtr.Zero);
+        var registry = CreateRegistry(new FakeHotkeyRegistrar(), action);
 
         var result = registry.TryBind(action.Id, CenterHotkey);
 
@@ -23,7 +30,7 @@ public class HotkeyActionRegistryTests
     [Fact]
     public void TryBind_UnknownActionId_Throws()
     {
-        var registry = new HotkeyActionRegistry(new FakeHotkeyRegistrar(), new WindowActionCatalog([]), IntPtr.Zero);
+        var registry = CreateRegistry(new FakeHotkeyRegistrar());
 
         Assert.Throws<ArgumentException>(() => registry.TryBind("neexistuje", CenterHotkey));
     }
@@ -33,7 +40,7 @@ public class HotkeyActionRegistryTests
     {
         var actionA = new StubWindowAction("action-a");
         var actionB = new StubWindowAction("action-b");
-        var registry = new HotkeyActionRegistry(new FakeHotkeyRegistrar(), new WindowActionCatalog([actionA, actionB]), IntPtr.Zero);
+        var registry = CreateRegistry(new FakeHotkeyRegistrar(), actionA, actionB);
         registry.TryBind(actionA.Id, CenterHotkey);
 
         var result = registry.TryBind(actionB.Id, CenterHotkey);
@@ -48,7 +55,7 @@ public class HotkeyActionRegistryTests
     {
         var action = new StubWindowAction("action-a");
         var registrar = new FakeHotkeyRegistrar(CenterHotkey);
-        var registry = new HotkeyActionRegistry(registrar, new WindowActionCatalog([action]), IntPtr.Zero);
+        var registry = CreateRegistry(registrar, action);
 
         var result = registry.TryBind(action.Id, CenterHotkey);
 
@@ -61,7 +68,7 @@ public class HotkeyActionRegistryTests
     {
         var action = new StubWindowAction("action-a");
         var registrar = new FakeHotkeyRegistrar();
-        var registry = new HotkeyActionRegistry(registrar, new WindowActionCatalog([action]), IntPtr.Zero);
+        var registry = CreateRegistry(registrar, action);
         registry.TryBind(action.Id, CenterHotkey);
 
         var result = registry.TryBind(action.Id, OtherHotkey);
@@ -76,7 +83,7 @@ public class HotkeyActionRegistryTests
     {
         var action = new StubWindowAction("action-a");
         var registrar = new FakeHotkeyRegistrar();
-        var registry = new HotkeyActionRegistry(registrar, new WindowActionCatalog([action]), IntPtr.Zero);
+        var registry = CreateRegistry(registrar, action);
         registry.TryBind(action.Id, CenterHotkey);
 
         registry.Unbind(action.Id);
@@ -90,7 +97,7 @@ public class HotkeyActionRegistryTests
     {
         var action = new StubWindowAction("action-a");
         var registrar = new FakeHotkeyRegistrar();
-        var registry = new HotkeyActionRegistry(registrar, new WindowActionCatalog([action]), IntPtr.Zero);
+        var registry = CreateRegistry(registrar, action);
         registry.TryBind(action.Id, CenterHotkey);
         var boundId = registrar.Registered.Single().Id;
 
@@ -104,7 +111,7 @@ public class HotkeyActionRegistryTests
     public void Dispatch_UnknownId_DoesNothing()
     {
         var action = new StubWindowAction("action-a");
-        var registry = new HotkeyActionRegistry(new FakeHotkeyRegistrar(), new WindowActionCatalog([action]), IntPtr.Zero);
+        var registry = CreateRegistry(new FakeHotkeyRegistrar(), action);
 
         registry.Dispatch(999);
 

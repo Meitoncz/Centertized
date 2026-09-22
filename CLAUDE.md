@@ -110,7 +110,30 @@ without needing a human to click/press anything. The one thing NOT covered this 
 the live capture UI itself (`HotkeyCaptureControl` on the Shortcuts page reacting to
 an actual click + keypress) — that still needs a human, since it's real GUI interaction.
 
-`CenterActiveWindowAction.ExecuteAsync` is still a stub (just logs) — the real Win32
-centering logic is Phase 3. Next up: Phase 3 (window centering: `Win32WindowService`,
-DPI/multi-monitor correctness, elevated-window handling) — see the phased roadmap
-(Phase 0 → Phase 5) for what's still ahead, and git log for exact commits.
+Phase 3 (real window centering via `Win32WindowService` + `WindowCenteringCalculator`)
+is also done. Verified for real (not just unit tests) using the same no-GUI approach as
+Phase 2, extended with a real second window: launched Notepad via PowerShell, moved it
+off-center with `MoveWindow`, made it foreground with `SetForegroundWindow`, fired the
+configured hotkey via `keybd_event`, then read its resulting position back. Two things
+worth knowing for next time:
+- The verifying PowerShell process is **not** DPI-aware by default, so its own
+  `GetWindowRect`/`Screen.WorkingArea` readings are DPI-*virtualized* and differ from
+  Centertized's (Per-Monitor-V2 aware) real physical coordinates by the monitor's scale
+  factor (seen directly on this machine: a consistent 1.25x gap on a 125%-scaled
+  monitor). To verify Centertized's actual behavior from PowerShell, call
+  `SetProcessDpiAwarenessContext((IntPtr)(-4))` **before** any window/monitor P/Invoke
+  calls in that script — then the numbers match exactly. Confirmed this way: the
+  window's real DWM extended-frame-bounds ended up centered on the real physical work
+  area to within ~1px on one axis, exactly as `WindowCenteringCalculator` intends.
+- Maximize → hotkey correctly restores first, then centers the restored size (verified
+  `IsZoomed` flips true -> false and the restored window lands centered).
+- Elevated-window handling (UIPI) was **not** verified live — this dev machine has UAC
+  disabled, which means there may be no real integrity-level split to test against
+  (everything could already be running elevated). Needs a real check on a machine with
+  normal UAC settings before trusting the documented elevated-window limitation as
+  confirmed rather than just "expected per Win32 docs."
+
+Next up: Phase 4 (autostart toggle, replace ad-hoc file logging with Serilog + global
+exception handling, tray notification on action failure, icon/branding polish) — see
+the phased roadmap (Phase 0 → Phase 5) for what's still ahead, and git log for exact
+commits.

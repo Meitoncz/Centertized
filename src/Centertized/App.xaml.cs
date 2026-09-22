@@ -4,6 +4,7 @@ using System.Windows.Interop;
 using Centertized.Core.Actions;
 using Centertized.Core.Hotkeys;
 using Centertized.Core.Settings;
+using Centertized.Core.WindowManagement;
 using Centertized.Views;
 using H.NotifyIcon;
 
@@ -81,7 +82,7 @@ public partial class App : Application
         _hotkeyMessageSource.AddHook(HotkeyWndProc);
 
         ActionCatalog = new WindowActionCatalog([new CenterActiveWindowAction()]);
-        HotkeyRegistry = new HotkeyActionRegistry(new Win32HotkeyRegistrar(), ActionCatalog, _hotkeyMessageSource.Handle);
+        HotkeyRegistry = new HotkeyActionRegistry(new Win32HotkeyRegistrar(), ActionCatalog, new Win32WindowService(), _hotkeyMessageSource.Handle);
         SettingsStore = new JsonSettingsStore();
 
         var settings = SettingsStore.Load();

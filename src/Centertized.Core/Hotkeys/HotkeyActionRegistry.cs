@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Centertized.Core.Actions;
+using Centertized.Core.WindowManagement;
 
 namespace Centertized.Core.Hotkeys;
 
@@ -17,14 +18,16 @@ public sealed class HotkeyActionRegistry
     private readonly IHotkeyRegistrar _registrar;
     private readonly IntPtr _windowHandle;
     private readonly WindowActionCatalog _catalog;
+    private readonly IWin32WindowService _windowService;
     private readonly Dictionary<string, HotkeyBinding> _bindingsByActionId = new();
     private readonly Dictionary<int, string> _actionIdById = new();
     private int _nextId = 1;
 
-    public HotkeyActionRegistry(IHotkeyRegistrar registrar, WindowActionCatalog catalog, IntPtr windowHandle)
+    public HotkeyActionRegistry(IHotkeyRegistrar registrar, WindowActionCatalog catalog, IWin32WindowService windowService, IntPtr windowHandle)
     {
         _registrar = registrar;
         _catalog = catalog;
+        _windowService = windowService;
         _windowHandle = windowHandle;
     }
 
@@ -93,11 +96,11 @@ public sealed class HotkeyActionRegistry
         _ = ExecuteSafelyAsync(action);
     }
 
-    private static async Task ExecuteSafelyAsync(IWindowAction action)
+    private async Task ExecuteSafelyAsync(IWindowAction action)
     {
         try
         {
-            await action.ExecuteAsync(new WindowActionContext(CancellationToken.None)).ConfigureAwait(false);
+            await action.ExecuteAsync(new WindowActionContext(_windowService, CancellationToken.None)).ConfigureAwait(false);
         }
         catch (Exception ex)
         {

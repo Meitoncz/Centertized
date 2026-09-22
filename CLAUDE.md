@@ -191,8 +191,6 @@ log file itself is correctly UTF-8 encoded; it's purely a Windows PowerShell 5.1
 `Get-Content` default-encoding-detection quirk, not a bug in the app.
 
 Remaining open items (not blocking, just not done yet):
-- Icon/branding pass (still `System.Drawing.SystemIcons.Application` as a placeholder —
-  a product-identity decision worth asking the user about rather than guessing at).
 - First-run tray balloon so users discover the icon exists.
 - Everything flagged above as "needs a human": visual check of the Settings
   window/tray-menu theming issues (see Known Issues), the hotkey capture UI's actual
@@ -203,3 +201,29 @@ Remaining open items (not blocking, just not done yet):
   needs a different mechanism than the hotkey/`IWindowAction` pattern (something like a
   `SetWinEventHook(EVENT_SYSTEM_FOREGROUND, ...)` watcher toggled from a settings
   checkbox, not a catalog action) — worth designing separately when picked up.
+
+## Session end 2026-09-22: visual polish pass needed next
+
+User did a hands-on pass and reported: core functionality (tray, hotkey, centering,
+Settings shell) works, but the **visual polish needs real work** — specifically the
+feeling that Mica/Acrylic isn't being applied correctly. Two concrete asks for next
+session (also in `IDEAS.md`):
+
+1. **Add a backdrop-type picker to Settings (General page)** — let the user choose
+   Mica / Acrylic / None instead of the hardcoded `SystemThemeWatcher.Watch(this)`
+   default in `SettingsWindow.xaml.cs`. Implementation sketch: add a
+   `WindowBackdropType` (or a simple string) field to `AppSettings`
+   (`Centertized.Core/Settings/AppSettings.cs`), a picker control on `GeneralPage`, and
+   call `SystemThemeWatcher.Watch(this, chosenBackdrop)` (it takes a
+   `Wpf.Ui.Controls.WindowBackdropType` as its second param, confirmed in Phase 1) with
+   the saved choice instead of the implicit default. Apply it on `SettingsWindow`
+   construction and whenever the setting changes while the window is open.
+2. **General Mica/Acrylic correctness pass** — this is likely the same root cause as
+   the already-documented Known Issue above (live theme-switch leaves the NavigationView
+   pane / title bar area out of sync with the content area). Worth investigating
+   properly this time (WPF-UI GitHub issues/discussions for known Mica bugs, whether
+   `ExtendsContentIntoTitleBar` or `WindowCornerPreference` interact badly with the
+   backdrop, whether it's specific to this Windows build) rather than deferring again —
+   the user explicitly flagged this as the top priority for the next session.
+
+Do these two together as one pass, not separately — they're the same subsystem.

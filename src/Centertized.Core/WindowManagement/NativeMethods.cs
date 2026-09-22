@@ -11,6 +11,7 @@ internal static class NativeMethods
     public const int WS_EX_APPWINDOW = 0x00040000;
     public const uint GW_OWNER = 4;
     public const int SW_RESTORE = 9;
+    public const int SW_MAXIMIZE = 3;
     public const uint MONITOR_DEFAULTTONEAREST = 2;
     public const int DWMWA_EXTENDED_FRAME_BOUNDS = 9;
     public const uint SWP_NOSIZE = 0x0001;

@@ -119,7 +119,7 @@ public partial class App : Application
         _hotkeyMessageSource = new HwndSource(parameters);
         _hotkeyMessageSource.AddHook(HotkeyWndProc);
 
-        ActionCatalog = new WindowActionCatalog([new CenterActiveWindowAction()]);
+        ActionCatalog = new WindowActionCatalog([new CenterActiveWindowAction(), new ToggleMaximizeAction()]);
         HotkeyRegistry = new HotkeyActionRegistry(new Win32HotkeyRegistrar(), ActionCatalog, new Win32WindowService(), _logger, _hotkeyMessageSource.Handle);
         SettingsStore = new JsonSettingsStore();
 

@@ -48,6 +48,8 @@ public sealed class Win32WindowService : IWin32WindowService
 
     public void Restore(IntPtr windowHandle) => ShowWindow(windowHandle, SW_RESTORE);
 
+    public void Maximize(IntPtr windowHandle) => ShowWindow(windowHandle, SW_MAXIMIZE);
+
     public bool TryGetVisualBounds(IntPtr windowHandle, out WindowRect bounds)
     {
         var hresult = DwmGetWindowAttribute(windowHandle, DWMWA_EXTENDED_FRAME_BOUNDS, out var rect, System.Runtime.InteropServices.Marshal.SizeOf<RECT>());
@@ -73,6 +75,9 @@ public sealed class Win32WindowService : IWin32WindowService
 
     public bool TrySetPosition(IntPtr windowHandle, int left, int top) =>
         SetWindowPos(windowHandle, IntPtr.Zero, left, top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+
+    public bool TrySetBounds(IntPtr windowHandle, WindowRect bounds) =>
+        SetWindowPos(windowHandle, IntPtr.Zero, bounds.Left, bounds.Top, bounds.Width, bounds.Height, SWP_NOZORDER | SWP_NOACTIVATE);
 
     private static string GetWindowClassName(IntPtr windowHandle)
     {

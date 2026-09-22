@@ -21,6 +21,8 @@ public interface IWin32WindowService
 
     void Restore(IntPtr windowHandle);
 
+    void Maximize(IntPtr windowHandle);
+
     /// <summary>Skutečné vizuální hranice (DWM extended frame bounds), ne GetWindowRect.</summary>
     bool TryGetVisualBounds(IntPtr windowHandle, out WindowRect bounds);
 
@@ -31,4 +33,7 @@ public interface IWin32WindowService
 
     /// <summary>Přesune okno beze změny velikosti a bez krádeže focusu; true = SetWindowPos uspěl.</summary>
     bool TrySetPosition(IntPtr windowHandle, int left, int top);
+
+    /// <summary>Nastaví pozici i velikost najednou (GetWindowRect "jazyk"), bez krádeže focusu.</summary>
+    bool TrySetBounds(IntPtr windowHandle, WindowRect bounds);
 }

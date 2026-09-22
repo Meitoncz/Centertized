@@ -157,7 +157,39 @@ Still open from Phase 4: a real icon/branding pass (still using
 decision worth asking the user about rather than guessing at) and a first-run tray
 balloon to help users discover the icon exists.
 
-Next up: Phase 5 (extensibility proof — add one more trivial `IWindowAction`, e.g. the
-"toggle maximize/restore to previous position" idea from `IDEAS.md`, and confirm it only
-takes one new class + one catalog line) — see the phased roadmap (Phase 0 → Phase 5),
-and git log for exact commits.
+Phase 5 (extensibility proof) is done, using the "toggle maximize/restore to previous
+position" idea from `IDEAS.md` as the real second action (`ToggleMaximizeAction`) rather
+than a throwaway demo. Confirmed the success criterion from the plan: adding it touched
+exactly `Centertized.Core/Actions/ToggleMaximizeAction.cs` (new file) and one line in
+`App.xaml.cs`'s `ActionCatalog = new WindowActionCatalog([...])` — nothing in
+`HotkeyActionRegistry`, the tray, `SettingsWindow`, or `ShortcutsPage.xaml` needed
+touching; the Shortcuts page picked up the new row automatically since it's catalog-
+driven. It DID require adding two new members to `IWin32WindowService`
+(`Maximize`, `TrySetBounds`) — that's expected and fine, the success criterion is about
+the hotkey/tray/Settings plumbing not needing changes, not about the window-management
+API surface being frozen; it's meant to grow as real actions need it.
+
+Verified for real with the same Notepad + `keybd_event` approach as Phases 2-3: moved
+Notepad to known bounds, fired the hotkey once (maximized, `IsZoomed` true), fired it
+again (restored to the exact original `GetWindowRect`, confirmed from a DPI-aware
+PowerShell reading — see the Phase 3 DPI note above, same gotcha applies here since each
+new PowerShell process needs its own `SetProcessDpiAwarenessContext` call).
+
+One incidental finding: if you read the Serilog log file from PowerShell, use
+`Get-Content ... -Encoding UTF8` — without it, Czech diacritics come out garbled. The
+log file itself is correctly UTF-8 encoded; it's purely a Windows PowerShell 5.1
+`Get-Content` default-encoding-detection quirk, not a bug in the app.
+
+Remaining open items (not blocking, just not done yet):
+- Icon/branding pass (still `System.Drawing.SystemIcons.Application` as a placeholder —
+  a product-identity decision worth asking the user about rather than guessing at).
+- First-run tray balloon so users discover the icon exists.
+- Everything flagged above as "needs a human": visual check of the Settings
+  window/tray-menu theming issues (see Known Issues), the hotkey capture UI's actual
+  click+keypress interaction, the toggle switch's click path, and the tray balloon's
+  on-screen appearance.
+- Elevated-window (UIPI) behavior still unverified live (this dev machine has UAC off).
+- The "auto-center every newly-opened window" idea from `IDEAS.md` is still open and
+  needs a different mechanism than the hotkey/`IWindowAction` pattern (something like a
+  `SetWinEventHook(EVENT_SYSTEM_FOREGROUND, ...)` watcher toggled from a settings
+  checkbox, not a catalog action) — worth designing separately when picked up.

@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Centertized.Core/Centertized.Core.csproj" />
+    <Project Path="src/Centertized.Tests/Centertized.Tests.csproj" />
+    <Project Path="src/Centertized/Centertized.csproj" />
+  </Folder>
+</Solution>

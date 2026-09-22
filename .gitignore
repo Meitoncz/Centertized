@@ -1,0 +1,22 @@
+## .NET
+bin/
+obj/
+out/
+
+## Visual Studio / Rider / VS Code
+.vs/
+.vscode/*
+!.vscode/extensions.json
+*.user
+*.suo
+.idea/
+
+## Test / coverage
+TestResults/
+*.trx
+coverage*.json
+coverage*.xml
+coverage*.info
+
+## Logs appky (běhový výstup, ne zdrojový kód)
+*.log

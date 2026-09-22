@@ -1,0 +1,2 @@
+- přepínač v GUI, který bude zapínat to, že každé nově otevřené okno se otevře rovnou vycentrované přesně uprostřed obrazovky
+- druhá zkratka pro to, aby aktivní okno provedlo maximized s tím, že po opětovném použití zkratky se okno vrátí do předchozího stavu, velikosti a polohy

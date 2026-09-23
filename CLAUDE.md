@@ -457,3 +457,20 @@ not be triggered from a script here (PowerShell-app toast never showed) — the 
 the class/style analysis above, so a human glance next time a notification pops up is
 worthwhile.
 
+### Follow-up: shortening the visible "jump" for UWP windows
+
+User could still see Store/Settings appear off-center and then jump (their own late
+resize can't be blocked — no Win32 API holds back a foreign window before first paint).
+Two changes made the jump much shorter: (1) while a UWP window is tracked (3s) an
+`EVENT_OBJECT_LOCATIONCHANGE` hook reacts within a frame to the app's own resize/move
+instead of waiting for the 50ms poll (the poll stays as a fallback). The hook is installed
+*only while something is tracked* — LOCATIONCHANGE fires system-wide for every cursor/
+window movement — and (un)hooking is marshalled to the UI thread via the
+`SynchronizationContext` captured in `Start()`, because `UnhookWinEvent` must run on the
+installing thread. Our own `SetWindowPos` re-triggers LOCATIONCHANGE; that's ignored since
+the rect then equals `TrackState.Applied`. (2) `UncloakBurstWindow` (desktop-switch
+detection wait before re-centering a reopened UWP window) cut from 150ms to 60ms — that
+wait was the largest single contributor to the visible jump on reopen. Measurement
+caveat: PowerShell polling has ~50ms resolution, so sub-100ms differences can't be
+measured from scripts; judge by eye.
+

@@ -46,7 +46,7 @@ public sealed class NewWindowWatcher : IDisposable
     // UNCLOAKED, ne SHOW. Stejné události ale vznikají při přepnutí virtuální plochy - to
     // odkryje víc oken najednou, včetně běžných Win32 oken, která se jinak nikdy necloaknou -
     // proto se do "dávky" počítají jen ne-UWP okna (Store otevře víc UWP rámců naráz).
-    private static readonly TimeSpan UncloakBurstWindow = TimeSpan.FromMilliseconds(150);
+    private static readonly TimeSpan UncloakBurstWindow = TimeSpan.FromMilliseconds(60);
 
     private readonly IWin32WindowService _windowService;
     private readonly ILogger _logger;
@@ -57,6 +57,21 @@ public sealed class NewWindowWatcher : IDisposable
     private readonly WinEventDelegate _callback;
     private IntPtr _hookHandle;
     private IntPtr _cloakHookHandle;
+
+    // LOCATIONCHANGE chodí systémově extrémně často (každý pohyb kurzoru/okna), proto se
+    // hook instaluje jen po dobu, co se sleduje aspoň jedno UWP okno. Instalace i
+    // odinstalace musí proběhnout na vlákně s message loopem (UI), které hook nainstalovalo
+    // - proto _uiContext.
+    private readonly Dictionary<IntPtr, TrackState> _tracked = [];
+    private IntPtr _locationHookHandle;
+    private SynchronizationContext? _uiContext;
+
+    private sealed class TrackState(WindowRect applied)
+    {
+        public WindowRect Applied { get; set; } = applied;
+
+        public Stopwatch Age { get; } = Stopwatch.StartNew();
+    }
 
     public NewWindowWatcher(IWin32WindowService windowService, ILogger logger)
     {
@@ -76,6 +91,7 @@ public sealed class NewWindowWatcher : IDisposable
 
         // Rozsah DESTROY..HIDE zahrnuje i SHOW (0x8001-0x8003) - DESTROY/HIDE slouží k
         // "zapomenutí" okna, viz OnWinEvent.
+        _uiContext = SynchronizationContext.Current;
         _hookHandle = SetWinEventHook(EVENT_OBJECT_DESTROY, EVENT_OBJECT_HIDE, IntPtr.Zero, _callback, 0, 0, WINEVENT_OUTOFCONTEXT);
         _cloakHookHandle = SetWinEventHook(EVENT_OBJECT_UNCLOAKED, EVENT_OBJECT_UNCLOAKED, IntPtr.Zero, _callback, 0, 0, WINEVENT_OUTOFCONTEXT);
     }
@@ -89,6 +105,17 @@ public sealed class NewWindowWatcher : IDisposable
 
         UnhookWinEvent(_hookHandle);
         UnhookWinEvent(_cloakHookHandle);
+        if (_locationHookHandle != IntPtr.Zero)
+        {
+            UnhookWinEvent(_locationHookHandle);
+            _locationHookHandle = IntPtr.Zero;
+        }
+
+        lock (_tracked)
+        {
+            _tracked.Clear();
+        }
+
         _hookHandle = IntPtr.Zero;
         _cloakHookHandle = IntPtr.Zero;
         _seenWindows.Clear();
@@ -124,6 +151,10 @@ public sealed class NewWindowWatcher : IDisposable
 
                 case EVENT_OBJECT_UNCLOAKED:
                     OnUncloaked(hwnd);
+                    return;
+
+                case EVENT_OBJECT_LOCATIONCHANGE:
+                    OnLocationChanged(hwnd);
                     return;
             }
 
@@ -212,7 +243,14 @@ public sealed class NewWindowWatcher : IDisposable
         // Debug level - narazit na cizí/přechodné okno (popup, tooltip...), kde
         // centrování nedává smysl, je tady běžné, ne varování hodné tray balonku.
         WindowCenterer.TryCenter(_windowService, _logger, hwnd, LogLevel.Debug);
-        _ = IsUwpFrame(hwnd) ? TrackAsync(hwnd) : FollowUpAsync(hwnd);
+        if (IsUwpFrame(hwnd))
+        {
+            _ = TrackAsync(hwnd);
+        }
+        else
+        {
+            _ = FollowUpAsync(hwnd);
+        }
     }
 
     // Okno přes celou pracovní plochu (overlay Výstřižků, celoobrazovkové appky) se
@@ -252,13 +290,20 @@ public sealed class NewWindowWatcher : IDisposable
 
     private async Task TrackAsync(IntPtr hwnd)
     {
+        _windowService.TryGetWindowRect(hwnd, out var initial);
+        var state = new TrackState(initial);
+        lock (_tracked)
+        {
+            _tracked[hwnd] = state;
+        }
+
+        _uiContext?.Post(_ => EnsureLocationHook(), null);
+
         try
         {
-            _windowService.TryGetWindowRect(hwnd, out var applied);
-            var previous = applied;
-            var stopwatch = Stopwatch.StartNew();
+            var previous = initial;
 
-            while (stopwatch.Elapsed < TrackingDuration)
+            while (state.Age.Elapsed < TrackingDuration)
             {
                 await Task.Delay(PollInterval).ConfigureAwait(false);
 
@@ -268,20 +313,11 @@ public sealed class NewWindowWatcher : IDisposable
                     return; // okno zmizelo / uživatel s ním něco udělal
                 }
 
-                var sizeChanged = current.Width != applied.Width || current.Height != applied.Height;
-                var positionChanged = current.Left != applied.Left || current.Top != applied.Top;
-                var needsCentering = sizeChanged || (positionChanged && stopwatch.Elapsed < PositionCorrectionWindow);
-
-                // Centrovat až ve chvíli, kdy se okno na jeden poll přestane měnit - jinak
-                // by se honilo za probíhající animací.
-                if (needsCentering && current == previous)
+                // Záložní cesta k rychlé reakci na LOCATIONCHANGE (viz OnLocationChanged) -
+                // centrovat až ve chvíli, kdy se okno na jeden poll přestane měnit.
+                if (current == previous)
                 {
-                    WindowCenterer.TryCenter(_windowService, _logger, hwnd, LogLevel.Debug);
-                    if (_windowService.TryGetWindowRect(hwnd, out var after))
-                    {
-                        applied = after;
-                        current = after;
-                    }
+                    CenterIfChanged(hwnd, state, current);
                 }
 
                 previous = current;
@@ -291,6 +327,92 @@ public sealed class NewWindowWatcher : IDisposable
         {
             _logger.LogWarning(ex, "Sledování nového okna {Handle} spadlo.", hwnd);
         }
+        finally
+        {
+            lock (_tracked)
+            {
+                _tracked.Remove(hwnd);
+            }
+
+            _uiContext?.Post(_ => ReleaseLocationHook(), null);
+        }
+    }
+
+    // Reakce v řádu jednotek ms na to, jak si UWP okno samo změní velikost/pozici -
+    // skok doprostřed je pak sotva postřehnutelný (oproti čekání na polling).
+    private void OnLocationChanged(IntPtr hwnd)
+    {
+        TrackState? state;
+        lock (_tracked)
+        {
+            if (!_tracked.TryGetValue(hwnd, out state))
+            {
+                return;
+            }
+        }
+
+        if (_windowService.IsMinimized(hwnd) || _windowService.IsMaximized(hwnd) ||
+            !_windowService.TryGetWindowRect(hwnd, out var current))
+        {
+            return;
+        }
+
+        CenterIfChanged(hwnd, state, current);
+    }
+
+    // Vycentruje okno, pokud se od posledního našeho umístění samo změnilo: změna velikosti
+    // vždy, změna samotné pozice jen v úvodní fázi (jinak by appka bojovala s uživatelem,
+    // který okno hned po otevření táhne). Vlastní přesun vyvolá další LOCATIONCHANGE,
+    // ten se přeskočí, protože rect už odpovídá Applied.
+    private void CenterIfChanged(IntPtr hwnd, TrackState state, WindowRect current)
+    {
+        lock (state)
+        {
+            if (current == state.Applied)
+            {
+                return;
+            }
+
+            var sizeChanged = current.Width != state.Applied.Width || current.Height != state.Applied.Height;
+            var positionChanged = current.Left != state.Applied.Left || current.Top != state.Applied.Top;
+            if (!sizeChanged && !(positionChanged && state.Age.Elapsed < PositionCorrectionWindow))
+            {
+                return;
+            }
+
+            WindowCenterer.TryCenter(_windowService, _logger, hwnd, LogLevel.Debug);
+            if (_windowService.TryGetWindowRect(hwnd, out var after))
+            {
+                state.Applied = after;
+            }
+        }
+    }
+
+    private void EnsureLocationHook()
+    {
+        if (_locationHookHandle != IntPtr.Zero || !IsRunning)
+        {
+            return;
+        }
+
+        _locationHookHandle = SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE, EVENT_OBJECT_LOCATIONCHANGE, IntPtr.Zero, _callback, 0, 0, WINEVENT_OUTOFCONTEXT);
+    }
+
+    private void ReleaseLocationHook()
+    {
+        bool anyTracked;
+        lock (_tracked)
+        {
+            anyTracked = _tracked.Count > 0;
+        }
+
+        if (anyTracked || _locationHookHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        UnhookWinEvent(_locationHookHandle);
+        _locationHookHandle = IntPtr.Zero;
     }
 
     public void Dispose() => Stop();

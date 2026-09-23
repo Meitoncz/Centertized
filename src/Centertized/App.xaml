@@ -26,9 +26,19 @@
                     <ContextMenu Background="{ui:ThemeResource ApplicationBackgroundBrush}"
                                  Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
                                  BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}">
-                        <MenuItem Header="Settings" Click="SettingsMenuItem_Click" Icon="{ui:SymbolIcon Settings24}" />
+                        <!-- ui:MenuItem, ne obyčejný MenuItem - má vlastní Fluent styl
+                             (zaoblený hover bez rámečku, správně vystředěná ikona). -->
+                        <ui:MenuItem Header="Settings" Click="SettingsMenuItem_Click">
+                            <ui:MenuItem.Icon>
+                                <ui:SymbolIcon Symbol="Settings20" />
+                            </ui:MenuItem.Icon>
+                        </ui:MenuItem>
                         <Separator />
-                        <MenuItem Header="Exit" Click="ExitMenuItem_Click" Icon="{ui:SymbolIcon ArrowExit24}" />
+                        <ui:MenuItem Header="Exit" Click="ExitMenuItem_Click">
+                            <ui:MenuItem.Icon>
+                                <ui:SymbolIcon Symbol="ArrowExit20" />
+                            </ui:MenuItem.Icon>
+                        </ui:MenuItem>
                     </ContextMenu>
                 </tb:TaskbarIcon.ContextMenu>
             </tb:TaskbarIcon>

@@ -14,7 +14,7 @@ public partial class HotkeyCaptureControl : UserControl
 {
     public static readonly DependencyProperty DisplayTextProperty = DependencyProperty.Register(
         nameof(DisplayText), typeof(string), typeof(HotkeyCaptureControl),
-        new PropertyMetadata("Click here, then press a shortcut"));
+        new PropertyMetadata("Not set"));
 
     public string DisplayText
     {
@@ -26,14 +26,10 @@ public partial class HotkeyCaptureControl : UserControl
 
     public HotkeyCaptureControl()
     {
+        // Fokus/hover/klik řeší Button sám nativně a spolehlivě (na rozdíl od
+        // dřívějšího ručně-klikacího Border, který uvnitř CardControl vůbec nešlo
+        // kliknout) - PreviewKeyDown je napojený deklarativně v XAML.
         InitializeComponent();
-        PreviewMouseLeftButtonDown += (_, _) => Focus();
-        PreviewKeyDown += OnPreviewKeyDown;
-        // Fokus zvýrazněný accent barvou uživatele (ne natvrdo modrou), mimo fokus
-        // zpátky na výchozí téma-aware barvu z XAML - proto se tam vrací přes
-        // ClearValue, ne přes další natvrdo danou barvu.
-        GotKeyboardFocus += (_, _) => RootBorder.SetResourceReference(Border.BorderBrushProperty, "SystemAccentColorPrimaryBrush");
-        LostKeyboardFocus += (_, _) => RootBorder.SetResourceReference(Border.BorderBrushProperty, "ControlStrokeColorDefaultBrush");
     }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
@@ -52,7 +48,7 @@ public partial class HotkeyCaptureControl : UserControl
         {
             // Zkratka bez modifikátoru by kolidovala s normálním psaním, proto se
             // vůbec nezkouší zaregistrovat.
-            DisplayText = "Hold at least one of Ctrl / Alt / Shift / Win";
+            DisplayText = "Needs Ctrl/Alt/Shift/Win";
             return;
         }
 

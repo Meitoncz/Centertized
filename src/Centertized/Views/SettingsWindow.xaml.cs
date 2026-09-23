@@ -125,8 +125,9 @@ public partial class SettingsWindow : FluentWindow
         control.DisplayText = result.Outcome switch
         {
             HotkeyRegistrationOutcome.Success => hotkey.ToString(),
-            HotkeyRegistrationOutcome.AlreadyBoundInApp => $"Already used by \"{DisplayNameOf(result.ConflictingActionId)}\"",
-            HotkeyRegistrationOutcome.AlreadyRegisteredExternally => "Already in use by another application",
+            // Krátké hlášky - tlačítko má pevnou šířku (viz HotkeyCaptureControl.xaml).
+            HotkeyRegistrationOutcome.AlreadyBoundInApp => $"Used by {DisplayNameOf(result.ConflictingActionId)}",
+            HotkeyRegistrationOutcome.AlreadyRegisteredExternally => "In use by another app",
             _ => control.DisplayText,
         };
 

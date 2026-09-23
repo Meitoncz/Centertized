@@ -1,19 +1,20 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media.Animation;
+using System.Windows.Media;
 
 namespace Centertized.Controls;
 
 /// <summary>
 /// WPF ScrollViewer defaultně scrolluje kolečkem myši "krokově" (skok po pevných
-/// řádcích), ne plynule jako moderní Windows appky (Nastavení, Edge...). Tohle je
-/// attached property, která na ScrollViewer napojí PreviewMouseWheel a nahradí
-/// skokovou změnu VerticalOffset animací.
+/// řádcích), ne plynule s hybností jako moderní Windows appky (Nastavení, Edge...).
 ///
-/// VerticalOffset samo o sobě není animovatelné DependencyProperty (je to obyčejná
-/// CLR vlastnost měněná přes ScrollToVerticalOffset()), proto se animuje pomocná
-/// "proxy" DP a v jejím PropertyChanged callbacku se teprve volá ScrollToVerticalOffset.
+/// První pokus (řetězené DoubleAnimation na "cvak" kolečka) pořád necítil přirozeně -
+/// pořádné momentum scrollování je fyzika (rychlost + tření), ne posloupnost animací s
+/// pevnou dobou trvání. Tohle počítá rychlost každý snímek přes CompositionTarget.
+/// Rendering: každý "cvak" kolečka rychlost zvýší, každý snímek se sníží násobením
+/// (tření) - výsledek je plynulé zrychlení při rychlém scrollování a přirozené
+/// doznění, podobně jako touchpad/WinUI momentum scroll.
 /// </summary>
 public static class SmoothScrollBehavior
 {
@@ -24,59 +25,64 @@ public static class SmoothScrollBehavior
 
     public static bool GetEnable(DependencyObject element) => (bool)element.GetValue(EnableProperty);
 
-    private static readonly DependencyProperty AnimatedOffsetProperty = DependencyProperty.RegisterAttached(
-        "AnimatedOffset", typeof(double), typeof(SmoothScrollBehavior), new PropertyMetadata(0d, OnAnimatedOffsetChanged));
+    // Kolik pixelů/snímek rychlosti přidá jeden "cvak" kolečka (Delta bývá +-120).
+    private const double PixelsPerNotch = 90;
 
-    // Cíl rozjeté animace, na který navazuje případný další "cvak" kolečka - bez
-    // tohohle by se při rychlém scrollování (zrychlení) počítal každý další krok
-    // z aktuální, ještě neuklidněné pozice animace, což vypadalo trhaně/poskakovaně.
-    private static readonly DependencyProperty PendingTargetProperty = DependencyProperty.RegisterAttached(
-        "PendingTarget", typeof(double?), typeof(SmoothScrollBehavior), new PropertyMetadata(null));
+    // Kolik rychlosti zůstane každý snímek (0-1) - nižší = rychlejší doznění.
+    private const double Friction = 0.82;
 
-    // Kolik pixelů na jeden "cvak" kolečka - Delta je typicky +-120, tohle dává
-    // podobný krok, na jaký jsou lidé zvyklí z Windows Nastavení.
-    private const double PixelsPerWheelNotch = 1.2;
-    private static readonly Duration AnimationDuration = new(TimeSpan.FromMilliseconds(260));
+    // Pod touhle rychlostí (px/snímek) se animace zastaví úplně, ať to nedoznívá donekonečna.
+    private const double StopThreshold = 0.05;
 
     private static void OnEnableChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is not ScrollViewer scrollViewer)
+        if (d is not ScrollViewer scrollViewer || !(bool)e.NewValue)
         {
             return;
         }
 
-        if ((bool)e.NewValue)
-        {
-            scrollViewer.PreviewMouseWheel += OnPreviewMouseWheel;
-        }
-        else
-        {
-            scrollViewer.PreviewMouseWheel -= OnPreviewMouseWheel;
-        }
-    }
+        var velocity = 0d;
+        EventHandler? renderingHandler = null;
 
-    private static void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
-    {
-        var scrollViewer = (ScrollViewer)sender;
-        e.Handled = true;
-
-        // Navázat na cíl předchozí (ještě běžící) animace, ne na aktuální
-        // "rozjetou" pozici - jinak rychlé po sobě jdoucí cvaknutí kolečkem
-        // efektivně zkracují ujetou dráhu každého kroku a scroll poskakuje.
-        var baseline = (double?)scrollViewer.GetValue(PendingTargetProperty) ?? scrollViewer.VerticalOffset;
-        var target = Math.Clamp(baseline - e.Delta * PixelsPerWheelNotch, 0, scrollViewer.ScrollableHeight);
-        scrollViewer.SetValue(PendingTargetProperty, target);
-
-        var animation = new DoubleAnimation(scrollViewer.VerticalOffset, target, AnimationDuration)
+        scrollViewer.PreviewMouseWheel += OnWheel;
+        scrollViewer.Unloaded += (_, _) =>
         {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+            scrollViewer.PreviewMouseWheel -= OnWheel;
+            if (renderingHandler is not null)
+            {
+                CompositionTarget.Rendering -= renderingHandler;
+            }
         };
-        animation.Completed += (_, _) => scrollViewer.ClearValue(PendingTargetProperty);
-        scrollViewer.BeginAnimation(AnimatedOffsetProperty, animation, HandoffBehavior.SnapshotAndReplace);
-    }
 
-    private static void OnAnimatedOffsetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-    {
-        ((ScrollViewer)d).ScrollToVerticalOffset((double)e.NewValue);
+        void OnWheel(object sender, MouseWheelEventArgs args)
+        {
+            args.Handled = true;
+            velocity -= args.Delta / 120.0 * PixelsPerNotch;
+
+            renderingHandler ??= OnRendering;
+            CompositionTarget.Rendering -= renderingHandler; // ať se nepřihlásí dvakrát
+            CompositionTarget.Rendering += renderingHandler;
+        }
+
+        void OnRendering(object? sender, EventArgs args)
+        {
+            var proposedOffset = scrollViewer.VerticalOffset + velocity;
+            var clampedOffset = Math.Clamp(proposedOffset, 0, scrollViewer.ScrollableHeight);
+            scrollViewer.ScrollToVerticalOffset(clampedOffset);
+
+            // Narazili jsme na horní/dolní okraj - rychlost zahodit, ať se dál "netlačí".
+            if (clampedOffset != proposedOffset)
+            {
+                velocity = 0;
+            }
+
+            velocity *= Friction;
+
+            if (Math.Abs(velocity) < StopThreshold)
+            {
+                CompositionTarget.Rendering -= renderingHandler;
+                renderingHandler = null;
+            }
+        }
     }
 }

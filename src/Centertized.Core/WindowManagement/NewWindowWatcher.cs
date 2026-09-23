@@ -26,6 +26,14 @@ public sealed class NewWindowWatcher : IDisposable
     // rychlý retry, ne jako plošné čekání před každým pokusem.
     private static readonly TimeSpan GeometryRetryDelay = TimeSpan.FromMilliseconds(40);
 
+    // UWP/moderní appky (Nastavení, Store...) mají při otevření krátkou animaci -
+    // v okamžiku EVENT_OBJECT_SHOW ještě nemají finální velikost/pozici, takže první
+    // centrování se netrefí a appka se pak doanimuje jinam (ověřeno 2026-09-23 -
+    // Nastavení/Store se necentrovaly, log ukazoval úspěšné SetWindowPos na pozici,
+    // která seděla jen k přechodné, ne finální geometrii). Druhá kontrola po tomhle
+    // čase to dorovná.
+    private static readonly TimeSpan AnimationSettleDelay = TimeSpan.FromMilliseconds(450);
+
     private readonly IWin32WindowService _windowService;
     private readonly ILogger _logger;
     private readonly HashSet<IntPtr> _seenWindows = [];
@@ -92,14 +100,8 @@ public sealed class NewWindowWatcher : IDisposable
             // pokud možno vůbec nezahlédne na jeho původní pozici (viz komentář u třídy).
             // Debug level - narazit na cizí/přechodné okno (popup, tooltip...), kde
             // centrování nedává smysl, je tady běžné, ne varování hodné tray balonku.
-            if (WindowCenterer.TryCenter(_windowService, _logger, hwnd, LogLevel.Debug))
-            {
-                return;
-            }
-
-            // Selhalo - nejspíš DWM ještě nestihl spočítat DWMWA_EXTENDED_FRAME_BOUNDS
-            // těsně po zobrazení okna. Jeden rychlý retry stačí, dál to nehonit.
-            _ = RetryAsync(hwnd);
+            WindowCenterer.TryCenter(_windowService, _logger, hwnd, LogLevel.Debug);
+            _ = FollowUpAsync(hwnd);
         }
         catch (Exception ex)
         {
@@ -107,13 +109,25 @@ public sealed class NewWindowWatcher : IDisposable
         }
     }
 
-    private async Task RetryAsync(IntPtr hwnd)
+    private async Task FollowUpAsync(IntPtr hwnd)
     {
         try
         {
+            // Rychlý retry - DWM občas nemá v okamžiku SHOW ještě spočtené
+            // DWMWA_EXTENDED_FRAME_BOUNDS, první pokus výše pak selže.
             await Task.Delay(GeometryRetryDelay).ConfigureAwait(false);
+            if (_windowService.IsMinimized(hwnd) || _windowService.IsMaximized(hwnd))
+            {
+                return;
+            }
 
-            if (_windowService.IsMinimized(hwnd))
+            WindowCenterer.TryCenter(_windowService, _logger, hwnd, LogLevel.Debug);
+
+            // Druhá, delší kontrola kvůli otevírací animaci u UWP/moderních appek
+            // (viz komentář u AnimationSettleDelay) - přecentrovat znovu, jakmile
+            // appka doanimuje na svou finální velikost/pozici.
+            await Task.Delay(AnimationSettleDelay).ConfigureAwait(false);
+            if (_windowService.IsMinimized(hwnd) || _windowService.IsMaximized(hwnd))
             {
                 return;
             }

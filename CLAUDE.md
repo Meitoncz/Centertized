@@ -367,3 +367,31 @@ Design notes worth keeping for next time:
   confirmed via the log that switching the log level to Debug for the watcher's own
   failures eliminated the Warning-level spam from Settings-window-internal popups without
   losing the hotkey path's Warning behavior.
+
+### Follow-up same day: UWP/modern apps (Settings, Store) weren't actually centering
+
+User noticed `ms-settings:`/Microsoft Store didn't end up centered even though
+`AutoCenterNewWindows` was on. Root-caused with a real diagnostic script (`EnumWindows` +
+`GetClassName`/`DwmGetWindowAttribute` dump of all visible titled windows) rather than
+guessing: these are `ApplicationFrameWindow`-classed windows hosted by
+`ApplicationFrameHost.exe`, which passed `IsEligibleForActions` and `DwmGetWindowAttribute`
+fine (not an eligibility bug) — the real problem was **timing**. UWP/modern apps run a
+short open animation; at the exact instant `EVENT_OBJECT_SHOW` fires, the window's
+geometry is still transitional (small/off), not its final size. The log confirmed this
+exactly: the watcher's first attempt moved the window to a "centered" position computed
+from that transitional geometry (e.g. `(1837, 1030)`), then the app's own animation grew
+it to its real size without re-centering, leaving it visibly off-center — independently
+confirmed by reading the window's bounds back a few seconds later and finding them
+nowhere near centered.
+
+Fix: `NewWindowWatcher.FollowUpAsync` now does **three** centering attempts total, not
+one — immediate (existing, avoids the flash for well-behaved apps), a ~40ms retry
+(existing, for the DWM-bounds-not-ready case), and a new ~450ms `AnimationSettleDelay`
+pass specifically for apps whose size/position is still settling after `SHOW`. Confirmed
+via the same diagnostic script: for both `ms-settings:` and the Store, the 40ms retry
+already landed on the correct final position in this test (the animation had settled by
+then), and the 450ms pass was a no-op confirmation — but it's the safety net for slower
+apps/animations. Re-verified plain Notepad still centers on the very first (immediate)
+attempt afterward, so the extra passes don't reintroduce the flash for normal apps —
+`WindowCenterer.TryCenter` is idempotent (re-centering an already-centered window is a
+harmless no-op `SetWindowPos` to the same spot).

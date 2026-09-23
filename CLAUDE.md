@@ -414,3 +414,46 @@ silently never matches — build such strings from `[char]` codes; and variables
 scriptblock passed as an `EnumWindows` delegate are unreliable — collect raw results into
 a `$script:` ArrayList and filter outside the callback.
 
+### Follow-up: Microsoft Store, notifications and the "what counts as a normal window" rule
+
+Three separate problems found the same evening, all fixed in `NewWindowWatcher`:
+
+1. **Notifications (toasts) and other system UI were being centered** — reported by the
+   user as a serious regression. `EVENT_OBJECT_SHOW` sees every shown window, including
+   `Windows.UI.Core.CoreWindow` (toasts, UWP content), OSD, overlays, popups. The watcher
+   now only acts on windows that pass `IsEligibleForActions` **and** `HasTitleBar()`
+   (`WS_CAPTION`). Checked against real windows: Chrome/Electron/Zen/Qt/WPF and UWP
+   `ApplicationFrameWindow` all have `WS_CAPTION`; `CoreWindow`, NVIDIA overlay, shell
+   windows don't. The hotkey actions deliberately do NOT use this rule. Frameless apps
+   (custom-chrome windows without `WS_CAPTION`) therefore aren't auto-centered — accepted
+   trade-off, a misplaced notification is far worse than a missed frameless window.
+   Also skipped: windows covering the whole work area (`CoversWholeWorkArea`) — the
+   Snipping Tool overlay (`SnipOverlayRootWindow`, has `WS_CAPTION`, full screen) was
+   being shoved to (0,-30).
+2. **Store's real frame settles later than any fixed delay.** At `SHOW` an
+   `ApplicationFrameWindow` is a 166x47 stub at (0,0); the app applies its true
+   size/saved position some hundreds of ms later. UWP frames now use `TrackAsync`: poll
+   `GetWindowRect` every 50ms for 3s and re-center whenever the size differs from what we
+   last applied (position-only changes count only during the first 600ms, so a user
+   dragging a fresh window isn't fought), and only once the rect held still for one poll.
+   **Non-UWP windows keep the original path unchanged** (immediate + 40ms + 450ms passes,
+   `FollowUpAsync`) — user explicitly asked not to disturb what works there.
+3. **Reopening a closed UWP window sends only `UNCLOAKED`, not `SHOW`** (closing = DWM
+   cloak with flags=2 "shell", same as virtual-desktop cloaking, so the cloak flags can't
+   tell them apart). Handled by a second hook on `EVENT_OBJECT_UNCLOAKED` for
+   `ApplicationFrameWindow` only. To avoid re-centering everything on a virtual-desktop
+   switch (which uncloaks many windows at once), an UNCLOAKED of a *regular titled
+   non-UWP window* within 150ms marks it as a desktop switch and the reopen is dropped.
+   Gotcha that cost a debugging round: the UWP app's own `CoreWindow` uncloaks together
+   with its frame on every open, so untitled windows must NOT count toward the desktop-
+   switch heuristic.
+
+Diagnosing this needed the geometry in the log: `WindowCenterer` now logs
+`[visual, rect, work]` plus `DescribeWindow()` (class, process, style, exStyle) for every
+successful move — keep that, it's how the toast/overlay problems were identified.
+Verified (Store close+reopen, Store cold start, Settings close+reopen, Notepad): all end
+centered to ~1px; Snipping Tool overlay no longer moved. Real toast notifications could
+not be triggered from a script here (PowerShell-app toast never showed) — the fix rests on
+the class/style analysis above, so a human glance next time a notification pops up is
+worthwhile.
+

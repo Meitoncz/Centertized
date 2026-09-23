@@ -7,6 +7,8 @@ namespace Centertized.Core.WindowManagement;
 internal static class NativeMethods
 {
     public const int GWL_EXSTYLE = -20;
+    public const int GWL_STYLE = -16;
+    public const int WS_CAPTION = unchecked((int)0x00C00000);
     public const int WS_EX_TOOLWINDOW = 0x00000080;
     public const int WS_EX_APPWINDOW = 0x00040000;
     public const uint GW_OWNER = 4;
@@ -14,6 +16,8 @@ internal static class NativeMethods
     public const int SW_MAXIMIZE = 3;
     public const uint MONITOR_DEFAULTTONEAREST = 2;
     public const int DWMWA_EXTENDED_FRAME_BOUNDS = 9;
+    public const uint EVENT_OBJECT_CLOAKED = 0x8017;
+    public const uint EVENT_OBJECT_UNCLOAKED = 0x8018;
     public const uint SWP_NOSIZE = 0x0001;
     public const uint SWP_NOZORDER = 0x0004;
     public const uint SWP_NOACTIVATE = 0x0010;
@@ -87,6 +91,7 @@ internal static class NativeMethods
 
     [DllImport("dwmapi.dll")]
     public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out RECT pvAttribute, int cbAttribute);
+
 
     [DllImport("user32.dll")]
     public static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr hmodWinEventProc, WinEventDelegate lpfnWinEventProc, uint idProcess, uint idThread, uint dwFlags);

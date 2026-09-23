@@ -45,7 +45,7 @@ internal static class WindowCenterer
 
         if (moved)
         {
-            logger.LogInformation("Okno {Handle} přesunuto na ({Left}, {Top}).", hwnd, left, top);
+            logger.LogInformation("Okno {Handle} přesunuto na ({Left}, {Top}) [visual {Visual}, rect {Rect}, work {Work}] {Description}", hwnd, left, top, visualBounds, windowRect, workArea, windowService.DescribeWindow(hwnd));
         }
         else
         {

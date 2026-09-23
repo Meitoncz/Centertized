@@ -17,6 +17,17 @@ public interface IWin32WindowService
 
     bool IsMinimized(IntPtr windowHandle);
 
+    string GetWindowClassName(IntPtr windowHandle);
+
+    /// <summary>
+    /// Má okno standardní záhlaví (WS_CAPTION)? Odlišuje běžná okna aplikací od notifikací
+    /// (toasty), overlayů, popupů a shellových oken, která se automaticky centrovat nemají.
+    /// </summary>
+    bool HasTitleBar(IntPtr windowHandle);
+
+    /// <summary>Krátký textový popis okna (třída, styly, proces) pro diagnostiku v logu.</summary>
+    string DescribeWindow(IntPtr windowHandle);
+
     bool IsMaximized(IntPtr windowHandle);
 
     void Restore(IntPtr windowHandle);

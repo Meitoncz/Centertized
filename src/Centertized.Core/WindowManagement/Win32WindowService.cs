@@ -42,6 +42,33 @@ public sealed class Win32WindowService : IWin32WindowService
 
     public bool IsMinimized(IntPtr windowHandle) => IsIconic(windowHandle);
 
+    public string DescribeWindow(IntPtr windowHandle)
+    {
+        GetWindowThreadProcessId(windowHandle, out var processId);
+        string processName;
+        try
+        {
+            processName = System.Diagnostics.Process.GetProcessById((int)processId).ProcessName;
+        }
+        catch (Exception)
+        {
+            processName = "?";
+        }
+
+        var style = GetWindowLong(windowHandle, GWL_STYLE);
+        var exStyle = GetWindowLong(windowHandle, GWL_EXSTYLE);
+        return $"class={GetWindowClassName(windowHandle)} proc={processName} style=0x{style:X} exStyle=0x{exStyle:X}";
+    }
+
+    public bool HasTitleBar(IntPtr windowHandle) => (GetWindowLong(windowHandle, GWL_STYLE) & WS_CAPTION) == WS_CAPTION;
+
+    public string GetWindowClassName(IntPtr windowHandle)
+    {
+        var buffer = new StringBuilder(256);
+        GetClassName(windowHandle, buffer, buffer.Capacity);
+        return buffer.ToString();
+    }
+
     public bool IsMaximized(IntPtr windowHandle) => IsZoomed(windowHandle);
 
     public void Restore(IntPtr windowHandle) => ShowWindow(windowHandle, SW_RESTORE);
@@ -77,10 +104,4 @@ public sealed class Win32WindowService : IWin32WindowService
     public bool TrySetBounds(IntPtr windowHandle, WindowRect bounds) =>
         SetWindowPos(windowHandle, IntPtr.Zero, bounds.Left, bounds.Top, bounds.Width, bounds.Height, SWP_NOZORDER | SWP_NOACTIVATE);
 
-    private static string GetWindowClassName(IntPtr windowHandle)
-    {
-        var buffer = new StringBuilder(256);
-        GetClassName(windowHandle, buffer, buffer.Capacity);
-        return buffer.ToString();
-    }
 }

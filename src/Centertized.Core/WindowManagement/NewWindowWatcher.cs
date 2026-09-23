@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Centertized.Core.Actions;
+using Centertized.Core.Settings;
 using Microsoft.Extensions.Logging;
 using static Centertized.Core.WindowManagement.NativeMethods;
 
@@ -50,6 +51,8 @@ public sealed class NewWindowWatcher : IDisposable
 
     private readonly IWin32WindowService _windowService;
     private readonly ILogger _logger;
+    private readonly AppRulesService _rules;
+    private readonly IWindowSizePolicy _sizePolicy;
     private readonly HashSet<IntPtr> _seenWindows = [];
     private readonly List<long> _recentUncloakTicks = [];
     // Delegát musí zůstat naživu po celou dobu, co je hook nainstalovaný - jinak by ho
@@ -73,10 +76,12 @@ public sealed class NewWindowWatcher : IDisposable
         public Stopwatch Age { get; } = Stopwatch.StartNew();
     }
 
-    public NewWindowWatcher(IWin32WindowService windowService, ILogger logger)
+    public NewWindowWatcher(IWin32WindowService windowService, ILogger logger, AppRulesService rules, IWindowSizePolicy sizePolicy)
     {
         _windowService = windowService;
         _logger = logger;
+        _rules = rules;
+        _sizePolicy = sizePolicy;
         _callback = OnWinEvent;
     }
 
@@ -233,7 +238,7 @@ public sealed class NewWindowWatcher : IDisposable
 
     private void Begin(IntPtr hwnd)
     {
-        if (_windowService.IsMinimized(hwnd) || _windowService.IsMaximized(hwnd) || CoversWholeWorkArea(hwnd))
+        if (_windowService.IsMinimized(hwnd) || _windowService.IsMaximized(hwnd) || CoversWholeWorkArea(hwnd) || IsExcluded(hwnd))
         {
             return;
         }
@@ -242,7 +247,7 @@ public sealed class NewWindowWatcher : IDisposable
         // pokud možno vůbec nezahlédne na jeho původní pozici (viz komentář u třídy).
         // Debug level - narazit na cizí/přechodné okno (popup, tooltip...), kde
         // centrování nedává smysl, je tady běžné, ne varování hodné tray balonku.
-        WindowCenterer.TryCenter(_windowService, _logger, hwnd, LogLevel.Debug);
+        Center(hwnd);
         if (IsUwpFrame(hwnd))
         {
             _ = TrackAsync(hwnd);
@@ -251,6 +256,17 @@ public sealed class NewWindowWatcher : IDisposable
         {
             _ = FollowUpAsync(hwnd);
         }
+    }
+
+    private void Center(IntPtr hwnd) =>
+        WindowCenterer.TryCenter(_windowService, _logger, hwnd, LogLevel.Debug, _sizePolicy);
+
+    // Výjimka podle aplikace. U UWP rámce, který ještě nemá obsah, identita není známá -
+    // pak se okno centruje jako obvykle a výjimka se ověří znovu při dalším kroku sledování.
+    private bool IsExcluded(IntPtr hwnd)
+    {
+        var app = _windowService.GetAppIdentity(hwnd);
+        return app is not null && _rules.IsExcluded(app.Key);
     }
 
     // Okno přes celou pracovní plochu (overlay Výstřižků, celoobrazovkové appky) se
@@ -272,7 +288,7 @@ public sealed class NewWindowWatcher : IDisposable
                 return;
             }
 
-            WindowCenterer.TryCenter(_windowService, _logger, hwnd, LogLevel.Debug);
+            Center(hwnd);
 
             await Task.Delay(AnimationSettleDelay).ConfigureAwait(false);
             if (_windowService.IsMinimized(hwnd) || _windowService.IsMaximized(hwnd))
@@ -280,7 +296,7 @@ public sealed class NewWindowWatcher : IDisposable
                 return;
             }
 
-            WindowCenterer.TryCenter(_windowService, _logger, hwnd, LogLevel.Debug);
+            Center(hwnd);
         }
         catch (Exception ex)
         {
@@ -368,7 +384,7 @@ public sealed class NewWindowWatcher : IDisposable
     {
         lock (state)
         {
-            if (current == state.Applied)
+            if (current == state.Applied || IsExcluded(hwnd))
             {
                 return;
             }
@@ -380,7 +396,7 @@ public sealed class NewWindowWatcher : IDisposable
                 return;
             }
 
-            WindowCenterer.TryCenter(_windowService, _logger, hwnd, LogLevel.Debug);
+            Center(hwnd);
             if (_windowService.TryGetWindowRect(hwnd, out var after))
             {
                 state.Applied = after;

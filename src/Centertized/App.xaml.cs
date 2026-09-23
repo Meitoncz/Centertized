@@ -46,6 +46,15 @@ public partial class App : Application
 
     public static NewWindowWatcher NewWindowWatcher { get; private set; } = null!;
 
+    public static AppRulesService AppRules { get; private set; } = null!;
+
+    public static IWin32WindowService WindowService { get; private set; } = null!;
+
+    /// <summary>Kopie AppSettings.ApplyRememberedSizes - čte se z vláken watcheru, proto ne přímo z disku.</summary>
+    public static volatile bool ApplyRememberedSizes = true;
+
+    private AboutWindow? _aboutWindow;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -60,7 +69,14 @@ public partial class App : Application
             return;
         }
 
+        SettingsStore = new JsonSettingsStore();
+        var startupSettings = SettingsStore.Load();
+        ApplyRememberedSizes = startupSettings.ApplyRememberedSizes;
+        Loc.Apply(startupSettings.Language);
+        Loc.LanguageChanged += ApplyTrayLanguage;
+
         _trayIcon = (TaskbarIcon)FindResource("TrayIcon");
+        ApplyTrayLanguage();
         _trayIcon.Icon = LoadTrayIcon();
         _trayIcon.ForceCreate();
 
@@ -148,11 +164,22 @@ public partial class App : Application
         _hotkeyMessageSource.AddHook(HotkeyWndProc);
 
         var windowService = new Win32WindowService();
-        ActionCatalog = new WindowActionCatalog([new CenterActiveWindowAction(), new ToggleMaximizeAction()]);
-        HotkeyRegistry = new HotkeyActionRegistry(new Win32HotkeyRegistrar(), ActionCatalog, windowService, _logger, _hotkeyMessageSource.Handle);
-        SettingsStore = new JsonSettingsStore();
+        WindowService = windowService;
+        AppRules = new AppRulesService(SettingsStore);
+        AppRules.Changed += OnAppRuleChanged;
 
-        NewWindowWatcher = new NewWindowWatcher(windowService, _logger);
+        ActionCatalog = new WindowActionCatalog(
+        [
+            new CenterActiveWindowAction(),
+            new ToggleMaximizeAction(),
+            new RememberWindowSizeAction(AppRules),
+            new RestoreRememberedSizeAction(AppRules),
+            new ToggleAutoCenterForAppAction(AppRules),
+        ]);
+        HotkeyRegistry = new HotkeyActionRegistry(new Win32HotkeyRegistrar(), ActionCatalog, windowService, _logger, _hotkeyMessageSource.Handle);
+
+        var sizePolicy = new RememberedSizePolicy(AppRules, windowService, () => ApplyRememberedSizes);
+        NewWindowWatcher = new NewWindowWatcher(windowService, _logger, AppRules, sizePolicy);
 
         var settings = SettingsStore.Load();
         if (settings.AutoCenterNewWindows)
@@ -194,7 +221,58 @@ public partial class App : Application
         return IntPtr.Zero;
     }
 
-    private void SettingsMenuItem_Click(object sender, RoutedEventArgs e) => ShowSettingsWindow();
+    private void OpenMenuItem_Click(object sender, RoutedEventArgs e) => ShowSettingsWindow();
+
+    private void AboutMenuItem_Click(object sender, RoutedEventArgs e) => ShowAboutWindow();
+
+    private void ApplyTrayLanguage()
+    {
+        if (_trayIcon?.ContextMenu is not { } menu || menu.Items.Count < 3)
+        {
+            return;
+        }
+
+        ((System.Windows.Controls.MenuItem)menu.Items[0]).Header = Loc.Get("Tray.Open");
+        ((System.Windows.Controls.MenuItem)menu.Items[1]).Header = Loc.Get("Tray.About");
+        ((System.Windows.Controls.MenuItem)menu.Items[2]).Header = Loc.Get("Tray.Close");
+    }
+
+    private void ShowAboutWindow()
+    {
+        if (_aboutWindow is { IsLoaded: true })
+        {
+            _aboutWindow.Activate();
+            return;
+        }
+
+        _aboutWindow = new AboutWindow();
+        _aboutWindow.Closed += (_, _) => _aboutWindow = null;
+        _aboutWindow.Show();
+        _aboutWindow.Activate();
+    }
+
+    // Krátké oznámení výsledku akce vyvolané zkratkou (uživatel u toho na appku nekouká).
+    private void OnAppRuleChanged(AppRuleChange change)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            var message = change.Kind switch
+            {
+                AppRuleChangeKind.SizeRemembered => Loc.Format("Notice.SizeRemembered", change.DisplayName, change.Width ?? 0, change.Height ?? 0),
+                AppRuleChangeKind.NothingRemembered => Loc.Format("Notice.NothingRemembered", change.DisplayName),
+                AppRuleChangeKind.ExclusionChanged when change.Excluded => Loc.Format("Notice.AutoCenterOff", change.DisplayName),
+                AppRuleChangeKind.ExclusionChanged => Loc.Format("Notice.AutoCenterOn", change.DisplayName),
+                AppRuleChangeKind.AppUnknown => Loc.Get("Notice.AppUnknown"),
+                _ => null,
+            };
+
+            // Změny z okna Nastavení (Forget size, Remove...) nepotřebují balonek - uživatel je vidí.
+            if (message is not null && _settingsWindow is not { IsActive: true })
+            {
+                _trayIcon?.ShowNotification("Centertized", message, H.NotifyIcon.Core.NotificationIcon.Info);
+            }
+        });
+    }
 
     // Běžná konvence tray appek - dvojklik levým tlačítkem otevře hlavní/Settings okno.
     private void TrayIcon_DoubleClick(object sender, RoutedEventArgs e) => ShowSettingsWindow();
@@ -234,11 +312,11 @@ public partial class App : Application
 
         app._trayIcon?.ShowNotification(
             "Centertized",
-            "Still running in the tray. Click the icon anytime to reopen Settings.",
+            Loc.Get("Tray.StillRunning"),
             H.NotifyIcon.Core.NotificationIcon.Info);
     }
 
-    private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
+    private void CloseMenuItem_Click(object sender, RoutedEventArgs e)
     {
         // Bez tohohle by Shutdown() níž narazil na SettingsWindow.OnClosing, ten by
         // zavření zrušil (Cancel = true) a appka by se korektně neukončila.

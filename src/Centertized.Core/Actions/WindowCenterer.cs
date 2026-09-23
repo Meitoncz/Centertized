@@ -19,7 +19,7 @@ internal static class WindowCenterer
     /// selhání běžné a očekávané - Warning by tam přes TrayNotificationSink spamoval
     /// tray balonky při každém otevření menu/comboboxu kdekoliv v systému.
     /// </summary>
-    public static bool TryCenter(IWin32WindowService windowService, ILogger logger, IntPtr hwnd, LogLevel failureLogLevel = LogLevel.Warning)
+    public static bool TryCenter(IWin32WindowService windowService, ILogger logger, IntPtr hwnd, LogLevel failureLogLevel = LogLevel.Warning, IWindowSizePolicy? sizePolicy = null)
     {
         if (windowService.IsMinimized(hwnd))
         {
@@ -40,8 +40,22 @@ internal static class WindowCenterer
             return false;
         }
 
-        var (left, top) = WindowCenteringCalculator.Calculate(workArea, visualBounds, windowRect);
-        var moved = windowService.TrySetPosition(hwnd, left, top);
+        int left, top;
+        bool moved;
+        if (sizePolicy is not null &&
+            sizePolicy.TryGetTargetSize(hwnd, out var targetWidth, out var targetHeight) &&
+            (targetWidth != windowRect.Width || targetHeight != windowRect.Height))
+        {
+            // Velikost i pozice jedním SetWindowPos - okno nejdřív nepoblikne ve staré velikosti.
+            var bounds = WindowCenteringCalculator.CalculateResized(workArea, visualBounds, windowRect, targetWidth, targetHeight);
+            (left, top) = (bounds.Left, bounds.Top);
+            moved = windowService.TrySetBounds(hwnd, bounds);
+        }
+        else
+        {
+            (left, top) = WindowCenteringCalculator.Calculate(workArea, visualBounds, windowRect);
+            moved = windowService.TrySetPosition(hwnd, left, top);
+        }
 
         if (moved)
         {

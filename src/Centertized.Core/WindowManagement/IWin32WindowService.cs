@@ -25,6 +25,21 @@ public interface IWin32WindowService
     /// </summary>
     bool HasTitleBar(IntPtr windowHandle);
 
+    /// <summary>Jde okno myší zvětšovat/zmenšovat (WS_THICKFRAME)? Jinak mu velikost nastavovat nemá smysl.</summary>
+    bool IsResizable(IntPtr windowHandle);
+
+    /// <summary>DPI monitoru, na kterém okno je (96 = 100 %).</summary>
+    int GetDpi(IntPtr windowHandle);
+
+    /// <summary>
+    /// Aplikace, které okno patří - u UWP oken skutečná appka, ne ApplicationFrameHost.exe.
+    /// Null, když se identitu nepodaří zjistit (např. UWP rámec, který ještě nemá obsah).
+    /// </summary>
+    AppIdentity? GetAppIdentity(IntPtr windowHandle);
+
+    /// <summary>Viditelná běžná okna aplikací (se záhlavím, způsobilá pro akce) - pro výběr "spuštěné aplikace".</summary>
+    IReadOnlyList<IntPtr> GetTopLevelAppWindows();
+
     /// <summary>Krátký textový popis okna (třída, styly, proces) pro diagnostiku v logu.</summary>
     string DescribeWindow(IntPtr windowHandle);
 

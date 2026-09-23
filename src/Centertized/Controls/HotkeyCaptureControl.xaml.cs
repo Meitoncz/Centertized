@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Centertized.Core.Hotkeys;
+using Centertized.Services;
 
 namespace Centertized.Controls;
 
@@ -15,7 +16,7 @@ public partial class HotkeyCaptureControl : UserControl
 {
     public static readonly DependencyProperty DisplayTextProperty = DependencyProperty.Register(
         nameof(DisplayText), typeof(string), typeof(HotkeyCaptureControl),
-        new PropertyMetadata("Not set"));
+        new PropertyMetadata(null));
 
     public string DisplayText
     {
@@ -28,6 +29,7 @@ public partial class HotkeyCaptureControl : UserControl
     public HotkeyCaptureControl()
     {
         InitializeComponent();
+        DisplayText = Loc.Get("Hotkey.NotSet");
         CaptureButton.PreviewKeyDown += OnPreviewKeyDown;
     }
 
@@ -47,7 +49,7 @@ public partial class HotkeyCaptureControl : UserControl
         {
             // Zkratka bez modifikátoru by kolidovala s normálním psaním, proto se
             // vůbec nezkouší zaregistrovat.
-            DisplayText = "Needs Ctrl/Alt/Shift/Win";
+            DisplayText = Loc.Get("Hotkey.NeedsModifier");
             return;
         }
 

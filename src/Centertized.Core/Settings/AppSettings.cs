@@ -17,9 +17,17 @@ public sealed class AppSettings
     /// <summary>Výchozí chování appky je ukázat Settings okno po startu - tohle to potlačí.</summary>
     public bool StartMinimized { get; set; }
 
+    public AppLanguage Language { get; set; } = AppLanguage.System;
+
     /// <summary>Jestli appka už jednou ukázala tray balonek "appka běží na pozadí".</summary>
     public bool HasShownTrayHint { get; set; }
 
     /// <summary>Automaticky vycentrovat každé nově otevřené okno (viz NewWindowWatcher).</summary>
     public bool AutoCenterNewWindows { get; set; }
+
+    /// <summary>Při auto-centrování nastavit i zapamatovanou velikost okna dané appky.</summary>
+    public bool ApplyRememberedSizes { get; set; } = true;
+
+    /// <summary>Pravidla podle aplikace, klíč = název .exe malými písmeny (viz AppIdentity).</summary>
+    public Dictionary<string, AppRule> AppRules { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }

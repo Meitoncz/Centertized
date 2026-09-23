@@ -3,9 +3,9 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  xmlns:controls="clr-namespace:Centertized.Controls"
-                 Title="Centertized Settings"
-                 Height="560" Width="720"
-                 MinHeight="420" MinWidth="520"
+                 Title="{DynamicResource Settings.Title}"
+                 Height="620" Width="760"
+                 MinHeight="420" MinWidth="560"
                  WindowStartupLocation="CenterScreen"
                  ExtendsContentIntoTitleBar="True">
     <ui:FluentWindow.Resources>
@@ -22,7 +22,7 @@
             <Setter Property="UseLayoutRounding" Value="False" />
         </Style>
     </ui:FluentWindow.Resources>
-    <!-- Žádný NavigationView - pro appku téhle velikosti (3 sekce) je sidebar zbytečný
+    <!-- Žádný NavigationView - pro appku téhle velikosti je sidebar zbytečný
          a navíc je NavigationView přímý spouštěč potvrzeného, dosud neopraveného
          WPF-UI bugu při živém přebarvení (lepoco/wpfui#1639). Jedna scrollovatelná
          stránka se sekcemi - stejný vzorec jako oficiální WPF-UI Gallery SettingsPage. -->
@@ -42,14 +42,14 @@
                       controls:SmoothScrollBehavior.Enable="True">
             <StackPanel Margin="24,12,24,24">
 
-                <ui:TextBlock Margin="0,0,0,8" FontTypography="BodyStrong" Text="Shortcuts" />
+                <ui:TextBlock Margin="0,0,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.Shortcuts}" />
                 <ItemsControl x:Name="ActionsList">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Keyboard24}">
                                 <ui:CardControl.Header>
                                     <StackPanel>
-                                        <ui:TextBlock FontTypography="BodyStrong" Text="{Binding DisplayName}" />
+                                        <ui:TextBlock FontTypography="BodyStrong" Text="{Binding Name}" />
                                         <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
                                                       Text="{Binding Description}"
                                                       TextWrapping="Wrap" />
@@ -63,10 +63,10 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="General" />
+                <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.General}" />
                 <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Power24}">
                     <ui:CardControl.Header>
-                        <ui:TextBlock FontTypography="Body" Text="Start with Windows" />
+                        <ui:TextBlock FontTypography="Body" Text="{DynamicResource General.StartWithWindows}" />
                     </ui:CardControl.Header>
                     <ui:ToggleSwitch x:Name="StartWithWindowsToggle"
                                      Checked="StartWithWindowsToggle_Toggled"
@@ -75,9 +75,9 @@
                 <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon ArrowMinimize24}">
                     <ui:CardControl.Header>
                         <StackPanel>
-                            <ui:TextBlock FontTypography="Body" Text="Start minimized" />
+                            <ui:TextBlock FontTypography="Body" Text="{DynamicResource General.StartMinimized}" />
                             <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                                          Text="Don't show this window when the app starts" />
+                                          Text="{DynamicResource General.StartMinimized.Description}" />
                         </StackPanel>
                     </ui:CardControl.Header>
                     <ui:ToggleSwitch x:Name="StartMinimizedToggle"
@@ -87,32 +87,106 @@
                 <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon AlignCenterHorizontal24}">
                     <ui:CardControl.Header>
                         <StackPanel>
-                            <ui:TextBlock FontTypography="Body" Text="Auto-center new windows" />
+                            <ui:TextBlock FontTypography="Body" Text="{DynamicResource General.AutoCenter}" />
                             <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                                          Text="Automatically center every newly opened window on its monitor" />
+                                          Text="{DynamicResource General.AutoCenter.Description}"
+                                          TextWrapping="Wrap" />
                         </StackPanel>
                     </ui:CardControl.Header>
                     <ui:ToggleSwitch x:Name="AutoCenterNewWindowsToggle"
                                      Checked="AutoCenterNewWindowsToggle_Toggled"
                                      Unchecked="AutoCenterNewWindowsToggle_Toggled" />
                 </ui:CardControl>
+                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Resize24}">
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <ui:TextBlock FontTypography="Body" Text="{DynamicResource General.RememberedSizes}" />
+                            <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                          Text="{DynamicResource General.RememberedSizes.Description}"
+                                          TextWrapping="Wrap" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch x:Name="RememberedSizesToggle"
+                                     Checked="RememberedSizesToggle_Toggled"
+                                     Unchecked="RememberedSizesToggle_Toggled" />
+                </ui:CardControl>
                 <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon WeatherSunny24}">
                     <ui:CardControl.Header>
                         <StackPanel>
-                            <ui:TextBlock FontTypography="Body" Text="Theme" />
+                            <ui:TextBlock FontTypography="Body" Text="{DynamicResource General.Theme}" />
                             <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                                          Text="Light, dark, or match Windows" />
+                                          Text="{DynamicResource General.Theme.Description}" />
                         </StackPanel>
                     </ui:CardControl.Header>
                     <ComboBox x:Name="ThemeModeCombo" MinWidth="160"
                               SelectionChanged="ThemeModeCombo_SelectionChanged">
-                        <ComboBoxItem Content="System" />
-                        <ComboBoxItem Content="Light" />
-                        <ComboBoxItem Content="Dark" />
+                        <ComboBoxItem Content="{DynamicResource General.Theme.System}" />
+                        <ComboBoxItem Content="{DynamicResource General.Theme.Light}" />
+                        <ComboBoxItem Content="{DynamicResource General.Theme.Dark}" />
+                    </ComboBox>
+                </ui:CardControl>
+                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon LocalLanguage24}">
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <ui:TextBlock FontTypography="Body" Text="{DynamicResource General.Language}" />
+                            <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                          Text="{DynamicResource General.Language.Description}" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ComboBox x:Name="LanguageCombo" MinWidth="160"
+                              SelectionChanged="LanguageCombo_SelectionChanged">
+                        <ComboBoxItem Content="{DynamicResource General.Language.System}" />
+                        <ComboBoxItem Content="English" />
+                        <ComboBoxItem Content="Čeština" />
                     </ComboBox>
                 </ui:CardControl>
 
-                <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="About" />
+                <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.Apps}" />
+                <ui:TextBlock Margin="0,0,0,12"
+                              Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                              Text="{DynamicResource Apps.Intro}"
+                              TextWrapping="Wrap" />
+                <ui:TextBlock x:Name="AppsEmptyText" Margin="0,0,0,12"
+                              Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                              Text="{DynamicResource Apps.Empty}" />
+                <ItemsControl x:Name="AppsList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon AppGeneric24}">
+                                <ui:CardControl.Header>
+                                    <StackPanel>
+                                        <ui:TextBlock FontTypography="BodyStrong" Text="{Binding DisplayName}" />
+                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                                      Text="{Binding SizeText}" />
+                                    </StackPanel>
+                                </ui:CardControl.Header>
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:TextBlock VerticalAlignment="Center" Margin="0,0,8,0"
+                                                  Text="{DynamicResource Apps.AutoCenter}" />
+                                    <ui:ToggleSwitch Tag="{Binding Key}" IsChecked="{Binding AutoCenterEnabled, Mode=OneWay}"
+                                                     Checked="AppAutoCenterToggle_Toggled"
+                                                     Unchecked="AppAutoCenterToggle_Toggled" />
+                                    <Button Margin="12,0,0,0" Tag="{Binding Key}"
+                                            Content="{DynamicResource Apps.ForgetSize}"
+                                            IsEnabled="{Binding HasSize}"
+                                            Click="AppForgetSize_Click" />
+                                    <Button Margin="8,0,0,0" Tag="{Binding Key}"
+                                            Content="{DynamicResource Apps.Remove}"
+                                            Click="AppRemove_Click" />
+                                </StackPanel>
+                            </ui:CardControl>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button x:Name="AddRunningAppButton" Margin="0,0,0,12"
+                        Content="{DynamicResource Apps.AddRunning}"
+                        Click="AddRunningAppButton_Click">
+                    <Button.ContextMenu>
+                        <ContextMenu x:Name="RunningAppsMenu" />
+                    </Button.ContextMenu>
+                </Button>
+
+                <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.About}" />
                 <ui:CardExpander Icon="{ui:SymbolIcon Info24}">
                     <ui:CardExpander.Header>
                         <StackPanel>
@@ -121,7 +195,7 @@
                         </StackPanel>
                     </ui:CardExpander.Header>
                     <ui:TextBlock Margin="0,0,0,8"
-                                  Text="A native Windows tray utility for window management, starting with active-window centering."
+                                  Text="{DynamicResource About.Description}"
                                   TextWrapping="Wrap" />
                 </ui:CardExpander>
             </StackPanel>

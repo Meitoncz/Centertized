@@ -60,6 +60,126 @@ public sealed class Win32WindowService : IWin32WindowService
         return $"class={GetWindowClassName(windowHandle)} proc={processName} style=0x{style:X} exStyle=0x{exStyle:X}";
     }
 
+    public bool IsResizable(IntPtr windowHandle) => (GetWindowLong(windowHandle, GWL_STYLE) & WS_THICKFRAME) != 0;
+
+    public int GetDpi(IntPtr windowHandle)
+    {
+        var dpi = GetDpiForWindow(windowHandle);
+        return dpi == 0 ? 96 : (int)dpi;
+    }
+
+    private readonly Dictionary<string, string> _displayNames = new(StringComparer.OrdinalIgnoreCase);
+
+    public AppIdentity? GetAppIdentity(IntPtr windowHandle)
+    {
+        GetWindowThreadProcessId(windowHandle, out var processId);
+
+        if (GetWindowClassName(windowHandle) == "ApplicationFrameWindow")
+        {
+            // Rámec patří ApplicationFrameHost.exe, skutečná appka žije v CoreWindow uvnitř.
+            var appProcessId = 0u;
+            EnumChildWindows(windowHandle, (child, _) =>
+            {
+                if (GetWindowClassName(child) == "Windows.UI.Core.CoreWindow")
+                {
+                    GetWindowThreadProcessId(child, out var childProcessId);
+                    if (childProcessId != processId)
+                    {
+                        appProcessId = childProcessId;
+                        return false;
+                    }
+                }
+
+                return true;
+            }, IntPtr.Zero);
+
+            if (appProcessId == 0)
+            {
+                return null;
+            }
+
+            processId = appProcessId;
+        }
+
+        var path = GetProcessImagePath(processId);
+        if (path is null)
+        {
+            return null;
+        }
+
+        var key = Path.GetFileName(path).ToLowerInvariant();
+        string displayName;
+        lock (_displayNames)
+        {
+            if (!_displayNames.TryGetValue(path, out displayName!))
+            {
+                displayName = ReadDisplayName(path);
+                _displayNames[path] = displayName;
+            }
+        }
+
+        return new AppIdentity(key, displayName);
+    }
+
+    public IReadOnlyList<IntPtr> GetTopLevelAppWindows()
+    {
+        var result = new List<IntPtr>();
+        EnumWindows((hwnd, _) =>
+        {
+            if (IsEligibleForActions(hwnd) && HasTitleBar(hwnd))
+            {
+                result.Add(hwnd);
+            }
+
+            return true;
+        }, IntPtr.Zero);
+        return result;
+    }
+
+    private static string? GetProcessImagePath(uint processId)
+    {
+        var handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, processId);
+        if (handle == IntPtr.Zero)
+        {
+            return null; // typicky proces se zvýšenými právy nebo už skončil
+        }
+
+        try
+        {
+            var buffer = new StringBuilder(1024);
+            var size = (uint)buffer.Capacity;
+            return QueryFullProcessImageName(handle, 0, buffer, ref size) ? buffer.ToString() : null;
+        }
+        finally
+        {
+            CloseHandle(handle);
+        }
+    }
+
+    private static string ReadDisplayName(string path)
+    {
+        var fallback = Path.GetFileNameWithoutExtension(path);
+        try
+        {
+            var info = System.Diagnostics.FileVersionInfo.GetVersionInfo(path);
+            foreach (var candidate in new[] { info.FileDescription, info.ProductName })
+            {
+                if (!string.IsNullOrWhiteSpace(candidate))
+                {
+                    // Některé appky (Store Notepad) mají v popisu i příponu souboru.
+                    var name = candidate.Trim();
+                    return name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? name[..^4] : name;
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Nečitelné verzové info není důvod nefungovat - stačí název souboru.
+        }
+
+        return fallback;
+    }
+
     public bool HasTitleBar(IntPtr windowHandle) => (GetWindowLong(windowHandle, GWL_STYLE) & WS_CAPTION) == WS_CAPTION;
 
     public string GetWindowClassName(IntPtr windowHandle)

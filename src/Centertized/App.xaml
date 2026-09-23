@@ -28,12 +28,17 @@
                                  BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}">
                         <!-- ui:MenuItem, ne obyčejný MenuItem - má vlastní Fluent styl
                              (zaoblený hover bez rámečku, správně vystředěná ikona). -->
-                        <ui:MenuItem Header="Settings" Click="SettingsMenuItem_Click">
+                        <ui:MenuItem Header="Open Centertized" Click="OpenMenuItem_Click">
                             <ui:MenuItem.Icon>
-                                <ui:SymbolIcon Symbol="Settings20" />
+                                <ui:SymbolIcon Symbol="Open20" />
                             </ui:MenuItem.Icon>
                         </ui:MenuItem>
-                        <ui:MenuItem Header="Exit" Click="ExitMenuItem_Click">
+                        <ui:MenuItem Header="About" Click="AboutMenuItem_Click">
+                            <ui:MenuItem.Icon>
+                                <ui:SymbolIcon Symbol="Info20" />
+                            </ui:MenuItem.Icon>
+                        </ui:MenuItem>
+                        <ui:MenuItem Header="Close" Click="CloseMenuItem_Click">
                             <ui:MenuItem.Icon>
                                 <ui:SymbolIcon Symbol="ArrowExit20" />
                             </ui:MenuItem.Icon>

@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <Resource Include="Resources\icon.ico" />
+    <Resource Include="Resources\centertized_icon.png" />
   </ItemGroup>
 
   <ItemGroup>

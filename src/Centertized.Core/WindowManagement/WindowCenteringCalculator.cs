@@ -25,4 +25,27 @@ public static class WindowCenteringCalculator
 
         return (targetVisualLeft - borderLeft, targetVisualTop - borderTop);
     }
+
+    /// <summary>
+    /// Jako <see cref="Calculate"/>, ale okno se zároveň zvětší/zmenší na požadovanou velikost
+    /// (GetWindowRect rozměry) a na střed vyjde jeho NOVÁ vizuální plocha. Neviditelné okraje
+    /// okna jsou pro dané okno konstantní, takže se z nich dá odvodit nová vizuální plocha.
+    /// Velikost se omezí tak, aby se vizuální plocha vešla do pracovní plochy.
+    /// </summary>
+    /// <returns>Nové hranice okna v souřadnicích pro SetWindowPos (GetWindowRect "jazyk").</returns>
+    public static WindowRect CalculateResized(WindowRect workArea, WindowRect visualBounds, WindowRect windowRect, int desiredWidth, int desiredHeight)
+    {
+        var insetLeft = visualBounds.Left - windowRect.Left;
+        var insetTop = visualBounds.Top - windowRect.Top;
+        var insetRight = windowRect.Right - visualBounds.Right;
+        var insetBottom = windowRect.Bottom - visualBounds.Bottom;
+
+        var width = Math.Clamp(desiredWidth, 1, workArea.Width + insetLeft + insetRight);
+        var height = Math.Clamp(desiredHeight, 1, workArea.Height + insetTop + insetBottom);
+
+        var newWindow = new WindowRect(0, 0, width, height);
+        var newVisual = new WindowRect(insetLeft, insetTop, width - insetRight, height - insetBottom);
+        var (left, top) = Calculate(workArea, newVisual, newWindow);
+        return new WindowRect(left, top, left + width, top + height);
+    }
 }

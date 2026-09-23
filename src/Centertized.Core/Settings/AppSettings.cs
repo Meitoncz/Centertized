@@ -16,4 +16,7 @@ public sealed class AppSettings
 
     /// <summary>Výchozí chování appky je ukázat Settings okno po startu - tohle to potlačí.</summary>
     public bool StartMinimized { get; set; }
+
+    /// <summary>Jestli appka už jednou ukázala tray balonek "appka běží na pozadí".</summary>
+    public bool HasShownTrayHint { get; set; }
 }

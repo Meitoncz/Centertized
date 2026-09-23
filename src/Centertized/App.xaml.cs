@@ -192,6 +192,28 @@ public partial class App : Application
         _settingsWindow.Activate();
     }
 
+    /// <summary>
+    /// Volá SettingsWindow při prvním schování okna (zavření křížkem) - v tu chvíli
+    /// appka "zmizí" a je dobré jednou upozornit, že běží dál v tray liště.
+    /// </summary>
+    public static void ShowTrayHintIfNeeded()
+    {
+        var app = (App)Current;
+        var settings = SettingsStore.Load();
+        if (settings.HasShownTrayHint)
+        {
+            return;
+        }
+
+        settings.HasShownTrayHint = true;
+        SettingsStore.Save(settings);
+
+        app._trayIcon?.ShowNotification(
+            "Centertized",
+            "Still running in the tray. Click the icon anytime to reopen Settings.",
+            H.NotifyIcon.Core.NotificationIcon.Info);
+    }
+
     private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
     {
         // Bez tohohle by Shutdown() níž narazil na SettingsWindow.OnClosing, ten by

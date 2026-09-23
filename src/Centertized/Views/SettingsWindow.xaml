@@ -8,6 +8,20 @@
                  MinHeight="420" MinWidth="520"
                  WindowStartupLocation="CenterScreen"
                  ExtendsContentIntoTitleBar="True">
+    <ui:FluentWindow.Resources>
+        <!-- Výchozí CornerRadius karet je moc malý/hranatý oproti referenci
+             (Windows Nastavení apod.) - implicitní styl přebíjí na zaoblenější.
+             UseLayoutRounding=False, jinak při zlomkovém DPI scale (125 % apod.)
+             WPF snapuje hrany na celé pixely a zaoblený roh vyjde "schodovitě". -->
+        <Style TargetType="{x:Type ui:CardControl}" BasedOn="{StaticResource {x:Type ui:CardControl}}">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="UseLayoutRounding" Value="False" />
+        </Style>
+        <Style TargetType="{x:Type ui:CardExpander}" BasedOn="{StaticResource {x:Type ui:CardExpander}}">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="UseLayoutRounding" Value="False" />
+        </Style>
+    </ui:FluentWindow.Resources>
     <!-- Žádný NavigationView - pro appku téhle velikosti (3 sekce) je sidebar zbytečný
          a navíc je NavigationView přímý spouštěč potvrzeného, dosud neopraveného
          WPF-UI bugu při živém přebarvení (lepoco/wpfui#1639). Jedna scrollovatelná

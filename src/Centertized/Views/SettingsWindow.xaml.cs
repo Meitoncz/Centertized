@@ -158,5 +158,6 @@ public partial class SettingsWindow : FluentWindow
         // Okno se jen schová, ne zavře – příští otevření z tray je pak okamžité.
         e.Cancel = true;
         Hide();
+        App.ShowTrayHintIfNeeded();
     }
 }

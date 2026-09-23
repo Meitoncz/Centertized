@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 
 namespace Centertized.Controls;
@@ -40,24 +41,62 @@ public static class SmoothScrollBehavior
 
     private static void OnEnableChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is not ScrollViewer scrollViewer)
+        var enable = (bool)e.NewValue;
+
+        if (d is ScrollViewer scrollViewer)
         {
+            scrollViewer.PreviewMouseWheel -= OnPreviewMouseWheel;
+            if (enable)
+            {
+                scrollViewer.PreviewMouseWheel += OnPreviewMouseWheel;
+            }
+
             return;
         }
 
-        if ((bool)e.NewValue)
+        // Jiný prvek se scrollováním uvnitř (ListBox, ItemsControl...): ScrollViewer je až v jeho
+        // šabloně, která v době zapnutí ještě nemusí existovat (např. prvek je Collapsed), proto se
+        // na kolečko čeká na hostiteli a vnitřní ScrollViewer se hledá až při prvním otočení.
+        if (d is UIElement host)
         {
-            scrollViewer.PreviewMouseWheel += OnPreviewMouseWheel;
-        }
-        else
-        {
-            scrollViewer.PreviewMouseWheel -= OnPreviewMouseWheel;
+            host.PreviewMouseWheel -= OnHostPreviewMouseWheel;
+            if (enable)
+            {
+                host.PreviewMouseWheel += OnHostPreviewMouseWheel;
+            }
         }
     }
 
-    private static void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    private static void OnHostPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        var scrollViewer = (ScrollViewer)sender;
+        if (FindScrollViewer((DependencyObject)sender) is { } scrollViewer)
+        {
+            Animate(scrollViewer, e);
+        }
+    }
+
+    private static ScrollViewer? FindScrollViewer(DependencyObject root)
+    {
+        if (root is ScrollViewer self)
+        {
+            return self;
+        }
+
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            if (FindScrollViewer(VisualTreeHelper.GetChild(root, i)) is { } found)
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
+    private static void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e) => Animate((ScrollViewer)sender, e);
+
+    private static void Animate(ScrollViewer scrollViewer, MouseWheelEventArgs e)
+    {
         e.Handled = true;
 
         // Navázat na cíl předchozí (ještě běžící) animace, ne na aktuální

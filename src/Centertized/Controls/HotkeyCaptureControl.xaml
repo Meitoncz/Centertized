@@ -7,8 +7,7 @@
          jakémkoliv kontejneru (CardControl apod.), ne ruční PreviewMouseLeftButtonDown.
          Pevná šířka, ať karta neposkakuje mezi "Not set" a dlouhou zkratkou. -->
     <Button x:Name="CaptureButton"
-            Width="190"
-            PreviewKeyDown="OnPreviewKeyDown">
+            Width="190">
         <!-- TextBlock s trimováním jako pojistka pro delší hlášky (konflikty apod.),
              ne jen Button.Content jako holý string. -->
         <TextBlock Text="{Binding DisplayText, ElementName=Root}"

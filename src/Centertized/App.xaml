@@ -26,9 +26,9 @@
                     <ContextMenu Background="{ui:ThemeResource ApplicationBackgroundBrush}"
                                  Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
                                  BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}">
-                        <MenuItem Header="Settings" Click="SettingsMenuItem_Click" />
+                        <MenuItem Header="Settings" Click="SettingsMenuItem_Click" Icon="{ui:SymbolIcon Settings24}" />
                         <Separator />
-                        <MenuItem Header="Exit" Click="ExitMenuItem_Click" />
+                        <MenuItem Header="Exit" Click="ExitMenuItem_Click" Icon="{ui:SymbolIcon ArrowExit24}" />
                     </ContextMenu>
                 </tb:TaskbarIcon.ContextMenu>
             </tb:TaskbarIcon>

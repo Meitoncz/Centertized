@@ -19,14 +19,20 @@ public sealed class AppSettings
 
     public AppLanguage Language { get; set; } = AppLanguage.System;
 
+    /// <summary>Po startu appky zkontrolovat, jestli je dostupná nová verze (jen v nainstalované appce).</summary>
+    public bool CheckForUpdatesAutomatically { get; set; } = true;
+
     /// <summary>Jestli appka už jednou ukázala tray balonek "appka běží na pozadí".</summary>
     public bool HasShownTrayHint { get; set; }
 
     /// <summary>Automaticky vycentrovat každé nově otevřené okno (viz NewWindowWatcher).</summary>
     public bool AutoCenterNewWindows { get; set; }
 
-    /// <summary>Při auto-centrování nastavit i zapamatovanou velikost okna dané appky.</summary>
-    public bool ApplyRememberedSizes { get; set; } = true;
+    /// <summary>
+    /// Pamatovat si velikost oken podle aplikace (učí se automaticky ze změn velikosti od uživatele)
+    /// a nová okna při auto-centrování otevírat v téhle velikosti.
+    /// </summary>
+    public bool RememberWindowSizes { get; set; } = true;
 
     /// <summary>Pravidla podle aplikace, klíč = název .exe malými písmeny (viz AppIdentity).</summary>
     public Dictionary<string, AppRule> AppRules { get; set; } = new(StringComparer.OrdinalIgnoreCase);

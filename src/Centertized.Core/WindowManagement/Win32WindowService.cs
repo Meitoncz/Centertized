@@ -118,7 +118,7 @@ public sealed class Win32WindowService : IWin32WindowService
             }
         }
 
-        return new AppIdentity(key, displayName);
+        return new AppIdentity(key, displayName, path);
     }
 
     public IReadOnlyList<IntPtr> GetTopLevelAppWindows()

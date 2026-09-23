@@ -100,15 +100,20 @@
                 <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Resize24}">
                     <ui:CardControl.Header>
                         <StackPanel>
-                            <ui:TextBlock FontTypography="Body" Text="{DynamicResource General.RememberedSizes}" />
+                            <ui:TextBlock FontTypography="Body" Text="{DynamicResource General.RememberSizes}" />
                             <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                                          Text="{DynamicResource General.RememberedSizes.Description}"
+                                          Text="{DynamicResource General.RememberSizes.Description}"
                                           TextWrapping="Wrap" />
                         </StackPanel>
                     </ui:CardControl.Header>
-                    <ui:ToggleSwitch x:Name="RememberedSizesToggle"
-                                     Checked="RememberedSizesToggle_Toggled"
-                                     Unchecked="RememberedSizesToggle_Toggled" />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Margin="0,0,16,0" VerticalAlignment="Center"
+                                Content="{DynamicResource General.RememberSizes.Forget}"
+                                Click="ForgetAllSizesButton_Click" />
+                        <ui:ToggleSwitch x:Name="RememberSizesToggle"
+                                         Checked="RememberSizesToggle_Toggled"
+                                         Unchecked="RememberSizesToggle_Toggled" />
+                    </StackPanel>
                 </ui:CardControl>
                 <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon WeatherSunny24}">
                     <ui:CardControl.Header>
@@ -141,50 +146,34 @@
                     </ComboBox>
                 </ui:CardControl>
 
-                <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.Apps}" />
-                <ui:TextBlock Margin="0,0,0,12"
+                <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.Exceptions}" />
+                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Prohibited24}">
+                    <ui:CardControl.Header>
+                        <ui:TextBlock FontTypography="Body" Text="{DynamicResource Exceptions.Intro}" TextWrapping="Wrap" />
+                    </ui:CardControl.Header>
+                    <Button Content="{DynamicResource Exceptions.Choose}" Click="ChooseAppsButton_Click" />
+                </ui:CardControl>
+                <ui:TextBlock x:Name="ExceptionsEmptyText" Margin="0,0,0,12"
                               Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                              Text="{DynamicResource Apps.Intro}"
-                              TextWrapping="Wrap" />
-                <ui:TextBlock x:Name="AppsEmptyText" Margin="0,0,0,12"
-                              Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                              Text="{DynamicResource Apps.Empty}" />
-                <ItemsControl x:Name="AppsList">
+                              Text="{DynamicResource Exceptions.Empty}" />
+                <ItemsControl x:Name="ExceptionsList">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon AppGeneric24}">
                                 <ui:CardControl.Header>
-                                    <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <!-- Barva puntíku = dominantní barva ikony aplikace (viz AccentColorExtractor). -->
+                                        <Ellipse Width="10" Height="10" Margin="0,0,10,0" VerticalAlignment="Center"
+                                                 Fill="{Binding AccentBrush}" />
                                         <ui:TextBlock FontTypography="BodyStrong" Text="{Binding DisplayName}" />
-                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                                                      Text="{Binding SizeText}" />
                                     </StackPanel>
                                 </ui:CardControl.Header>
-                                <StackPanel Orientation="Horizontal">
-                                    <ui:TextBlock VerticalAlignment="Center" Margin="0,0,8,0"
-                                                  Text="{DynamicResource Apps.AutoCenter}" />
-                                    <ui:ToggleSwitch Tag="{Binding Key}" IsChecked="{Binding AutoCenterEnabled, Mode=OneWay}"
-                                                     Checked="AppAutoCenterToggle_Toggled"
-                                                     Unchecked="AppAutoCenterToggle_Toggled" />
-                                    <Button Margin="12,0,0,0" Tag="{Binding Key}"
-                                            Content="{DynamicResource Apps.ForgetSize}"
-                                            IsEnabled="{Binding HasSize}"
-                                            Click="AppForgetSize_Click" />
-                                    <Button Margin="8,0,0,0" Tag="{Binding Key}"
-                                            Content="{DynamicResource Apps.Remove}"
-                                            Click="AppRemove_Click" />
-                                </StackPanel>
+                                <Button Tag="{Binding Key}" Content="{DynamicResource Exceptions.Remove}"
+                                        Click="ExceptionRemove_Click" />
                             </ui:CardControl>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <Button x:Name="AddRunningAppButton" Margin="0,0,0,12"
-                        Content="{DynamicResource Apps.AddRunning}"
-                        Click="AddRunningAppButton_Click">
-                    <Button.ContextMenu>
-                        <ContextMenu x:Name="RunningAppsMenu" />
-                    </Button.ContextMenu>
-                </Button>
 
                 <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.About}" />
                 <ui:CardExpander Icon="{ui:SymbolIcon Info24}">

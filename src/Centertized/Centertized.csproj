@@ -14,17 +14,25 @@
     <PackageReference Include="Serilog" Version="4.4.0" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageReference Include="Velopack" Version="1.2.158" />
     <PackageReference Include="WPF-UI" Version="4.3.0" />
   </ItemGroup>
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
+    <!-- Vlastní vstupní bod (Program.cs) - Velopack musí běžet před startem WPF, ať zvládne
+         instalační/aktualizační hooky. Verzi při vydání přepisuje CI přes -p:Version=. -->
+    <StartupObject>Centertized.Program</StartupObject>
+    <Version>1.0.0</Version>
+    <Product>Centertized</Product>
+    <Authors>Meitoncz</Authors>
+    <Description>Native Windows tray utility for window management.</Description>
   </PropertyGroup>
 
 </Project>

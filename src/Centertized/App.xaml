@@ -18,33 +18,8 @@
             <!-- Appka nemá hlavní okno – ikona v tray liště žije jako zdroj a musí se
                  ve startu appky explicitně "vytvořit" (viz App.xaml.cs, ForceCreate). -->
             <tb:TaskbarIcon x:Key="TrayIcon" ToolTipText="Centertized"
-                            TrayLeftMouseDoubleClick="TrayIcon_DoubleClick">
-                <tb:TaskbarIcon.ContextMenu>
-                    <!-- Obyčejný ContextMenu/MenuItem si WPF-UI implicitně neobarví
-                         (na rozdíl od třeba ComboBoxu/ToggleSwitche) - explicitní
-                         theme-aware barvy, ať to není bílé i v dark režimu. -->
-                    <ContextMenu Background="{ui:ThemeResource ApplicationBackgroundBrush}"
-                                 Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
-                                 BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}">
-                        <!-- ui:MenuItem, ne obyčejný MenuItem - má vlastní Fluent styl
-                             (zaoblený hover bez rámečku, správně vystředěná ikona). -->
-                        <ui:MenuItem Header="Open Centertized" Click="OpenMenuItem_Click">
-                            <ui:MenuItem.Icon>
-                                <ui:SymbolIcon Symbol="Open20" />
-                            </ui:MenuItem.Icon>
-                        </ui:MenuItem>
-                        <ui:MenuItem Header="About" Click="AboutMenuItem_Click">
-                            <ui:MenuItem.Icon>
-                                <ui:SymbolIcon Symbol="Info20" />
-                            </ui:MenuItem.Icon>
-                        </ui:MenuItem>
-                        <ui:MenuItem Header="Close" Click="CloseMenuItem_Click">
-                            <ui:MenuItem.Icon>
-                                <ui:SymbolIcon Symbol="ArrowExit20" />
-                            </ui:MenuItem.Icon>
-                        </ui:MenuItem>
-                    </ContextMenu>
-                </tb:TaskbarIcon.ContextMenu>
+                            TrayLeftMouseDoubleClick="TrayIcon_DoubleClick"
+                            TrayRightMouseUp="TrayIcon_RightClick">
             </tb:TaskbarIcon>
         </ResourceDictionary>
     </Application.Resources>

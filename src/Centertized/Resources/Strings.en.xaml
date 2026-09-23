@@ -14,20 +14,12 @@
     <sys:String x:Key="Action.center-active-window.Description">Centers the currently active window on its current monitor.</sys:String>
     <sys:String x:Key="Action.toggle-maximize-active-window.Name">Toggle maximize active window</sys:String>
     <sys:String x:Key="Action.toggle-maximize-active-window.Description">Maximizes the active window; pressing it again restores the previous size and position.</sys:String>
-    <sys:String x:Key="Action.remember-window-size.Name">Remember window size</sys:String>
-    <sys:String x:Key="Action.remember-window-size.Description">Remembers the size of the active window for its app; new windows of that app open in this size.</sys:String>
-    <sys:String x:Key="Action.restore-remembered-size.Name">Restore remembered size</sys:String>
-    <sys:String x:Key="Action.restore-remembered-size.Description">Resizes the active window to the size remembered for its app and centers it.</sys:String>
-    <sys:String x:Key="Action.toggle-auto-center-for-app.Name">Toggle auto-center for this app</sys:String>
-    <sys:String x:Key="Action.toggle-auto-center-for-app.Description">Excludes the app of the active window from auto-centering, or includes it again.</sys:String>
 
     <sys:String x:Key="General.StartWithWindows">Start with Windows</sys:String>
     <sys:String x:Key="General.StartMinimized">Start minimized</sys:String>
     <sys:String x:Key="General.StartMinimized.Description">Don't show this window when the app starts</sys:String>
     <sys:String x:Key="General.AutoCenter">Auto-center new windows</sys:String>
     <sys:String x:Key="General.AutoCenter.Description">Automatically center every newly opened window on its monitor</sys:String>
-    <sys:String x:Key="General.RememberedSizes">Apply remembered window sizes</sys:String>
-    <sys:String x:Key="General.RememberedSizes.Description">New windows of apps with a remembered size open in that size</sys:String>
     <sys:String x:Key="General.Theme">Theme</sys:String>
     <sys:String x:Key="General.Theme.Description">Light, dark, or match Windows</sys:String>
     <sys:String x:Key="General.Theme.System">System</sys:String>
@@ -37,15 +29,6 @@
     <sys:String x:Key="General.Language.Description">Language of the app</sys:String>
     <sys:String x:Key="General.Language.System">System</sys:String>
 
-    <sys:String x:Key="Apps.Intro">Per-app rules: exclude an app from auto-centering, or set the size its new windows open in. The quickest way to add an app is the "Remember window size" and "Toggle auto-center for this app" shortcuts.</sys:String>
-    <sys:String x:Key="Apps.Empty">No apps yet.</sys:String>
-    <sys:String x:Key="Apps.AddRunning">Add running app…</sys:String>
-    <sys:String x:Key="Apps.AddRunning.None">No other apps found</sys:String>
-    <sys:String x:Key="Apps.AutoCenter">Auto-center</sys:String>
-    <sys:String x:Key="Apps.ForgetSize">Forget size</sys:String>
-    <sys:String x:Key="Apps.Remove">Remove</sys:String>
-    <sys:String x:Key="Apps.Size.Remembered">Remembered size: {0} × {1}</sys:String>
-    <sys:String x:Key="Apps.Size.None">No remembered size</sys:String>
 
     <sys:String x:Key="About.Description">A native Windows tray utility for window management, starting with active-window centering.</sys:String>
     <sys:String x:Key="About.Version">Version {0}</sys:String>
@@ -75,10 +58,19 @@
     <sys:String x:Key="Tray.Close">Close</sys:String>
     <sys:String x:Key="Tray.StillRunning">Still running in the tray. Click the icon anytime to reopen Settings.</sys:String>
 
-    <sys:String x:Key="Notice.SizeRemembered">Size remembered for {0}: {1} × {2}</sys:String>
-    <sys:String x:Key="Notice.NothingRemembered">No remembered size for {0}</sys:String>
-    <sys:String x:Key="Notice.AutoCenterOff">Auto-center turned off for {0}</sys:String>
-    <sys:String x:Key="Notice.AutoCenterOn">Auto-center turned on for {0}</sys:String>
-    <sys:String x:Key="Notice.AppUnknown">Couldn't tell which app this window belongs to.</sys:String>
     <sys:String x:Key="Notice.UpdateAvailable">Version {0} is available. Open Settings to update.</sys:String>
+
+    <sys:String x:Key="General.RememberSizes">Remember window sizes</sys:String>
+    <sys:String x:Key="General.RememberSizes.Description">Windows of an app open in the size you last gave them. Works together with auto-center.</sys:String>
+    <sys:String x:Key="General.RememberSizes.Forget">Forget all sizes</sys:String>
+    <sys:String x:Key="Section.Exceptions">Auto-center exceptions</sys:String>
+    <sys:String x:Key="Exceptions.Intro">New windows of these apps are not centered automatically.</sys:String>
+    <sys:String x:Key="Exceptions.Choose">Choose apps…</sys:String>
+    <sys:String x:Key="Exceptions.Empty">No exceptions.</sys:String>
+    <sys:String x:Key="Exceptions.Remove">Remove</sys:String>
+    <sys:String x:Key="Picker.Title">Choose apps</sys:String>
+    <sys:String x:Key="Picker.Hint">Checked apps are excluded from auto-centering.</sys:String>
+    <sys:String x:Key="Picker.Search">Search apps</sys:String>
+    <sys:String x:Key="Picker.Done">Done</sys:String>
+    <sys:String x:Key="Picker.Cancel">Cancel</sys:String>
 </ResourceDictionary>

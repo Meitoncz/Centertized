@@ -12,6 +12,9 @@ public sealed class AppRule
     /// <summary>Nové okno téhle appky se nemá automaticky centrovat.</summary>
     public bool ExcludedFromAutoCenter { get; set; }
 
+    /// <summary>Dominantní barva ikony aplikace ("#RRGGBB") pro barevný puntík v seznamu výjimek.</summary>
+    public string? AccentColor { get; set; }
+
     public int? RememberedWidth { get; set; }
 
     public int? RememberedHeight { get; set; }

@@ -50,8 +50,10 @@ public partial class App : Application
 
     public static IWin32WindowService WindowService { get; private set; } = null!;
 
-    /// <summary>Kopie AppSettings.ApplyRememberedSizes - čte se z vláken watcheru, proto ne přímo z disku.</summary>
-    public static volatile bool ApplyRememberedSizes = true;
+    /// <summary>Kopie AppSettings.RememberWindowSizes - čte se z vláken watcheru, proto ne přímo z disku.</summary>
+    public static volatile bool RememberWindowSizes = true;
+
+    public static WindowSizeLearner SizeLearner { get; private set; } = null!;
 
     private AboutWindow? _aboutWindow;
 
@@ -71,12 +73,12 @@ public partial class App : Application
 
         SettingsStore = new JsonSettingsStore();
         var startupSettings = SettingsStore.Load();
-        ApplyRememberedSizes = startupSettings.ApplyRememberedSizes;
+        RememberWindowSizes = startupSettings.RememberWindowSizes;
         Loc.Apply(startupSettings.Language);
-        Loc.LanguageChanged += ApplyTrayLanguage;
+        ThemeService.Apply(startupSettings.ThemeMode);
+        ThemeService.WatchSystemTheme();
 
         _trayIcon = (TaskbarIcon)FindResource("TrayIcon");
-        ApplyTrayLanguage();
         _trayIcon.Icon = LoadTrayIcon();
         _trayIcon.ForceCreate();
 
@@ -96,6 +98,19 @@ public partial class App : Application
         if (!startMinimized || e.Args.Contains("--settings"))
         {
             ShowSettingsWindow();
+        }
+
+        // Jen pro ruční/skriptované ověření vzhledu menu - v tray se pravým klikem
+        // nedá nasnímat ze skriptu, tak se menu otevře na pevných souřadnicích.
+        if (e.Args.Contains("--show-picker"))
+        {
+            new InstalledAppsWindow().Show();
+        }
+
+        if (e.Args.Contains("--show-tray-menu"))
+        {
+            // Nativní menu blokuje, dokud se nezavře - proto až po dokončení startu.
+            Dispatcher.BeginInvoke(() => ShowTrayMenu((1000, 760)), DispatcherPriority.ApplicationIdle);
         }
     }
 
@@ -166,25 +181,27 @@ public partial class App : Application
         var windowService = new Win32WindowService();
         WindowService = windowService;
         AppRules = new AppRulesService(SettingsStore);
-        AppRules.Changed += OnAppRuleChanged;
 
         ActionCatalog = new WindowActionCatalog(
         [
             new CenterActiveWindowAction(),
             new ToggleMaximizeAction(),
-            new RememberWindowSizeAction(AppRules),
-            new RestoreRememberedSizeAction(AppRules),
-            new ToggleAutoCenterForAppAction(AppRules),
         ]);
         HotkeyRegistry = new HotkeyActionRegistry(new Win32HotkeyRegistrar(), ActionCatalog, windowService, _logger, _hotkeyMessageSource.Handle);
 
-        var sizePolicy = new RememberedSizePolicy(AppRules, windowService, () => ApplyRememberedSizes);
+        var sizePolicy = new RememberedSizePolicy(AppRules, windowService, () => RememberWindowSizes);
         NewWindowWatcher = new NewWindowWatcher(windowService, _logger, AppRules, sizePolicy);
+        SizeLearner = new WindowSizeLearner(windowService, AppRules, _logger);
 
         var settings = SettingsStore.Load();
         if (settings.AutoCenterNewWindows)
         {
             NewWindowWatcher.Start();
+        }
+
+        if (settings.RememberWindowSizes)
+        {
+            SizeLearner.Start();
         }
 
         foreach (var (actionId, hotkeyText) in settings.Hotkeys)
@@ -221,20 +238,20 @@ public partial class App : Application
         return IntPtr.Zero;
     }
 
-    private void OpenMenuItem_Click(object sender, RoutedEventArgs e) => ShowSettingsWindow();
+    // Nativní Win32 menu (viz NativeTrayMenu) místo WPF ContextMenu.
+    private void TrayIcon_RightClick(object sender, RoutedEventArgs e) => ShowTrayMenu();
 
-    private void AboutMenuItem_Click(object sender, RoutedEventArgs e) => ShowAboutWindow();
-
-    private void ApplyTrayLanguage()
+    private void ShowTrayMenu((int X, int Y)? forcedPosition = null)
     {
-        if (_trayIcon?.ContextMenu is not { } menu || menu.Items.Count < 3)
+        // Glyphy ze Segoe Fluent Icons: OpenInNewWindow, Info, PowerButton.
+        var items = new List<NativeMenuItem>
         {
-            return;
-        }
+            new("", Loc.Get("Tray.Open"), ShowSettingsWindow),
+            new("", Loc.Get("Tray.About"), ShowAboutWindow),
+            new("", Loc.Get("Tray.Close"), ExitApplication),
+        };
 
-        ((System.Windows.Controls.MenuItem)menu.Items[0]).Header = Loc.Get("Tray.Open");
-        ((System.Windows.Controls.MenuItem)menu.Items[1]).Header = Loc.Get("Tray.About");
-        ((System.Windows.Controls.MenuItem)menu.Items[2]).Header = Loc.Get("Tray.Close");
+        NativeTrayMenu.Show(items, ThemeService.IsDark, forcedPosition);
     }
 
     private void ShowAboutWindow()
@@ -249,29 +266,6 @@ public partial class App : Application
         _aboutWindow.Closed += (_, _) => _aboutWindow = null;
         _aboutWindow.Show();
         _aboutWindow.Activate();
-    }
-
-    // Krátké oznámení výsledku akce vyvolané zkratkou (uživatel u toho na appku nekouká).
-    private void OnAppRuleChanged(AppRuleChange change)
-    {
-        Dispatcher.BeginInvoke(() =>
-        {
-            var message = change.Kind switch
-            {
-                AppRuleChangeKind.SizeRemembered => Loc.Format("Notice.SizeRemembered", change.DisplayName, change.Width ?? 0, change.Height ?? 0),
-                AppRuleChangeKind.NothingRemembered => Loc.Format("Notice.NothingRemembered", change.DisplayName),
-                AppRuleChangeKind.ExclusionChanged when change.Excluded => Loc.Format("Notice.AutoCenterOff", change.DisplayName),
-                AppRuleChangeKind.ExclusionChanged => Loc.Format("Notice.AutoCenterOn", change.DisplayName),
-                AppRuleChangeKind.AppUnknown => Loc.Get("Notice.AppUnknown"),
-                _ => null,
-            };
-
-            // Změny z okna Nastavení (Forget size, Remove...) nepotřebují balonek - uživatel je vidí.
-            if (message is not null && _settingsWindow is not { IsActive: true })
-            {
-                _trayIcon?.ShowNotification("Centertized", message, H.NotifyIcon.Core.NotificationIcon.Info);
-            }
-        });
     }
 
     // Běžná konvence tray appek - dvojklik levým tlačítkem otevře hlavní/Settings okno.
@@ -316,7 +310,7 @@ public partial class App : Application
             H.NotifyIcon.Core.NotificationIcon.Info);
     }
 
-    private void CloseMenuItem_Click(object sender, RoutedEventArgs e)
+    private void ExitApplication()
     {
         // Bez tohohle by Shutdown() níž narazil na SettingsWindow.OnClosing, ten by
         // zavření zrušil (Cancel = true) a appka by se korektně neukončila.
@@ -335,6 +329,7 @@ public partial class App : Application
         _trayIcon?.Dispose();
         _hotkeyMessageSource?.Dispose(); // uvolní i všechny RegisterHotKey registrace na tomhle okně
         NewWindowWatcher?.Dispose();
+        SizeLearner?.Dispose();
         if (_ownsSingleInstanceMutex)
         {
             _singleInstanceMutex?.ReleaseMutex();

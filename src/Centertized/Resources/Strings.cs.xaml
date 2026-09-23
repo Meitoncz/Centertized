@@ -14,20 +14,12 @@
     <sys:String x:Key="Action.center-active-window.Description">Vycentruje aktuálně aktivní okno na jeho monitoru.</sys:String>
     <sys:String x:Key="Action.toggle-maximize-active-window.Name">Maximalizovat / obnovit aktivní okno</sys:String>
     <sys:String x:Key="Action.toggle-maximize-active-window.Description">Maximalizuje aktivní okno; při dalším stisku ho vrátí na původní velikost a pozici.</sys:String>
-    <sys:String x:Key="Action.remember-window-size.Name">Zapamatovat velikost okna</sys:String>
-    <sys:String x:Key="Action.remember-window-size.Description">Zapamatuje velikost aktivního okna pro jeho aplikaci; nová okna té aplikace se otevřou v této velikosti.</sys:String>
-    <sys:String x:Key="Action.restore-remembered-size.Name">Vrátit zapamatovanou velikost</sys:String>
-    <sys:String x:Key="Action.restore-remembered-size.Description">Nastaví aktivnímu oknu velikost zapamatovanou pro jeho aplikaci a vycentruje ho.</sys:String>
-    <sys:String x:Key="Action.toggle-auto-center-for-app.Name">Přepnout auto-centrování pro tuto aplikaci</sys:String>
-    <sys:String x:Key="Action.toggle-auto-center-for-app.Description">Vyřadí aplikaci aktivního okna z auto-centrování, nebo ji do něj zase vrátí.</sys:String>
 
     <sys:String x:Key="General.StartWithWindows">Spouštět s Windows</sys:String>
     <sys:String x:Key="General.StartMinimized">Spustit minimalizovaně</sys:String>
     <sys:String x:Key="General.StartMinimized.Description">Po spuštění aplikace nezobrazovat toto okno</sys:String>
     <sys:String x:Key="General.AutoCenter">Automaticky centrovat nová okna</sys:String>
     <sys:String x:Key="General.AutoCenter.Description">Každé nově otevřené okno se automaticky vycentruje na svém monitoru</sys:String>
-    <sys:String x:Key="General.RememberedSizes">Používat zapamatované velikosti oken</sys:String>
-    <sys:String x:Key="General.RememberedSizes.Description">Nová okna aplikací se zapamatovanou velikostí se otevřou v této velikosti</sys:String>
     <sys:String x:Key="General.Theme">Motiv</sys:String>
     <sys:String x:Key="General.Theme.Description">Světlý, tmavý, nebo podle Windows</sys:String>
     <sys:String x:Key="General.Theme.System">Podle systému</sys:String>
@@ -37,15 +29,6 @@
     <sys:String x:Key="General.Language.Description">Jazyk aplikace</sys:String>
     <sys:String x:Key="General.Language.System">Podle systému</sys:String>
 
-    <sys:String x:Key="Apps.Intro">Pravidla podle aplikace: vyřaďte aplikaci z auto-centrování, nebo nastavte velikost, ve které se její nová okna otevřou. Nejrychleji aplikaci přidáte zkratkami „Zapamatovat velikost okna“ a „Přepnout auto-centrování pro tuto aplikaci“.</sys:String>
-    <sys:String x:Key="Apps.Empty">Zatím žádné aplikace.</sys:String>
-    <sys:String x:Key="Apps.AddRunning">Přidat spuštěnou aplikaci…</sys:String>
-    <sys:String x:Key="Apps.AddRunning.None">Nenalezeny žádné další aplikace</sys:String>
-    <sys:String x:Key="Apps.AutoCenter">Auto-centrování</sys:String>
-    <sys:String x:Key="Apps.ForgetSize">Zapomenout velikost</sys:String>
-    <sys:String x:Key="Apps.Remove">Odebrat</sys:String>
-    <sys:String x:Key="Apps.Size.Remembered">Zapamatovaná velikost: {0} × {1}</sys:String>
-    <sys:String x:Key="Apps.Size.None">Žádná zapamatovaná velikost</sys:String>
 
     <sys:String x:Key="About.Description">Nativní nástroj pro oznamovací oblast Windows pro správu oken, zatím s centrováním aktivního okna.</sys:String>
     <sys:String x:Key="About.Version">Verze {0}</sys:String>
@@ -75,10 +58,19 @@
     <sys:String x:Key="Tray.Close">Zavřít</sys:String>
     <sys:String x:Key="Tray.StillRunning">Stále běží v oznamovací oblasti. Kliknutím na ikonu kdykoli znovu otevřete Nastavení.</sys:String>
 
-    <sys:String x:Key="Notice.SizeRemembered">Velikost zapamatována pro {0}: {1} × {2}</sys:String>
-    <sys:String x:Key="Notice.NothingRemembered">Pro {0} není zapamatovaná žádná velikost</sys:String>
-    <sys:String x:Key="Notice.AutoCenterOff">Auto-centrování vypnuto pro {0}</sys:String>
-    <sys:String x:Key="Notice.AutoCenterOn">Auto-centrování zapnuto pro {0}</sys:String>
-    <sys:String x:Key="Notice.AppUnknown">Nepodařilo se zjistit, které aplikaci okno patří.</sys:String>
     <sys:String x:Key="Notice.UpdateAvailable">Je dostupná verze {0}. Aktualizujte v Nastavení.</sys:String>
+
+    <sys:String x:Key="General.RememberSizes">Pamatovat si velikosti oken</sys:String>
+    <sys:String x:Key="General.RememberSizes.Description">Okna aplikace se otevřou ve velikosti, kterou jste jim naposledy nastavili. Funguje spolu s auto-centrováním.</sys:String>
+    <sys:String x:Key="General.RememberSizes.Forget">Zapomenout všechny velikosti</sys:String>
+    <sys:String x:Key="Section.Exceptions">Výjimky z auto-centrování</sys:String>
+    <sys:String x:Key="Exceptions.Intro">Nová okna těchto aplikací se automaticky necentrují.</sys:String>
+    <sys:String x:Key="Exceptions.Choose">Vybrat aplikace…</sys:String>
+    <sys:String x:Key="Exceptions.Empty">Žádné výjimky.</sys:String>
+    <sys:String x:Key="Exceptions.Remove">Odebrat</sys:String>
+    <sys:String x:Key="Picker.Title">Vybrat aplikace</sys:String>
+    <sys:String x:Key="Picker.Hint">Zaškrtnuté aplikace se nebudou automaticky centrovat.</sys:String>
+    <sys:String x:Key="Picker.Search">Hledat aplikace</sys:String>
+    <sys:String x:Key="Picker.Done">Hotovo</sys:String>
+    <sys:String x:Key="Picker.Cancel">Zrušit</sys:String>
 </ResourceDictionary>

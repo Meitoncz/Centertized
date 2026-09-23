@@ -8,10 +8,6 @@ public enum AppRuleChangeKind
     SizeCleared,
     ExclusionChanged,
     Removed,
-    /// <summary>Uživatel chtěl vrátit zapamatovanou velikost, ale pro appku žádná není.</summary>
-    NothingRemembered,
-    /// <summary>Akci nešlo provést, protože se nepodařilo zjistit, které appce okno patří.</summary>
-    AppUnknown,
 }
 
 public sealed record AppRuleChange(AppRuleChangeKind Kind, string Key, string DisplayName, int? Width, int? Height, bool Excluded);
@@ -36,9 +32,6 @@ public sealed class AppRulesService
     /// <summary>Vyvolá se po každé změně (na vlákně, které změnu provedlo).</summary>
     public event Action<AppRuleChange>? Changed;
 
-    /// <summary>Oznámí uživateli výsledek akce, která nic nezměnila (např. "nic zapamatováno").</summary>
-    public void Announce(AppRuleChange change) => Changed?.Invoke(change);
-
     public IReadOnlyList<KeyValuePair<string, AppRule>> All()
     {
         lock (_gate)
@@ -46,6 +39,10 @@ public sealed class AppRulesService
             return Clone(_rules).OrderBy(kv => kv.Value.DisplayName, StringComparer.CurrentCultureIgnoreCase).ToList();
         }
     }
+
+    /// <summary>Aplikace vyřazené z auto-centrování (klíč + pravidlo), řazené podle názvu.</summary>
+    public IReadOnlyList<KeyValuePair<string, AppRule>> ExcludedApps() =>
+        All().Where(kv => kv.Value.ExcludedFromAutoCenter).ToList();
 
     public bool IsExcluded(string key)
     {
@@ -99,6 +96,66 @@ public sealed class AppRulesService
     public void SetExcluded(string key, bool excluded)
     {
         MutateByKey(key, rule => rule.ExcludedFromAutoCenter = excluded, AppRuleChangeKind.ExclusionChanged);
+    }
+
+    /// <summary>
+    /// Nastaví seznam výjimek najednou: aplikace v excluded se vyřadí, ostatní dosud vyřazené
+    /// se vrátí. Jedno uložení a jedno oznámení místo desítek.
+    /// </summary>
+    public void SetExcludedApps(IReadOnlyCollection<(AppIdentity App, string? AccentColor)> excluded)
+    {
+        lock (_gate)
+        {
+            var wanted = excluded.ToDictionary(a => a.App.Key, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var key in _rules.Where(kv => kv.Value.ExcludedFromAutoCenter && !wanted.ContainsKey(kv.Key)).Select(kv => kv.Key).ToList())
+            {
+                _rules[key].ExcludedFromAutoCenter = false;
+                if (_rules[key].IsEmpty)
+                {
+                    _rules.Remove(key);
+                }
+            }
+
+            foreach (var (app, accentColor) in wanted.Values)
+            {
+                if (!_rules.TryGetValue(app.Key, out var rule))
+                {
+                    rule = new AppRule();
+                    _rules[app.Key] = rule;
+                }
+
+                rule.DisplayName = app.DisplayName;
+                rule.ExcludedFromAutoCenter = true;
+                rule.AccentColor = accentColor ?? rule.AccentColor;
+            }
+
+            Persist();
+        }
+
+        Changed?.Invoke(new AppRuleChange(AppRuleChangeKind.ExclusionChanged, "", "", null, null, true));
+    }
+
+    /// <summary>Zapomene všechny zapamatované velikosti (výjimky z auto-centrování zůstanou).</summary>
+    public void ClearAllRememberedSizes()
+    {
+        lock (_gate)
+        {
+            foreach (var key in _rules.Keys.ToList())
+            {
+                var rule = _rules[key];
+                rule.RememberedWidth = null;
+                rule.RememberedHeight = null;
+                if (rule.IsEmpty)
+                {
+                    _rules.Remove(key);
+                }
+            }
+
+            Persist();
+        }
+
+        Changed?.Invoke(new AppRuleChange(AppRuleChangeKind.SizeCleared, "", "", null, null, false));
     }
 
     public void Remove(string key)
@@ -180,6 +237,7 @@ public sealed class AppRulesService
             kv => new AppRule
             {
                 DisplayName = kv.Value.DisplayName,
+                AccentColor = kv.Value.AccentColor,
                 ExcludedFromAutoCenter = kv.Value.ExcludedFromAutoCenter,
                 RememberedWidth = kv.Value.RememberedWidth,
                 RememberedHeight = kv.Value.RememberedHeight,

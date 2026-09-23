@@ -33,6 +33,21 @@ public class JsonSettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void SaveThenLoad_EnumsRoundTripAsReadableStrings()
+    {
+        var store = new JsonSettingsStore(_tempFile);
+        var settings = new AppSettings { ThemeMode = ThemePreference.Dark };
+
+        store.Save(settings);
+        var rawJson = File.ReadAllText(_tempFile);
+        var loaded = store.Load();
+
+        // Enum se musí ukládat jako čitelný string (ne 0/1/2) - viz JsonStringEnumConverter.
+        Assert.Contains("\"Dark\"", rawJson);
+        Assert.Equal(ThemePreference.Dark, loaded.ThemeMode);
+    }
+
+    [Fact]
     public void Load_CorruptedFile_FallsBackToDefaultsInsteadOfThrowing()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(_tempFile)!);

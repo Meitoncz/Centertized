@@ -1,7 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using Centertized.Core.Hotkeys;
 
 namespace Centertized.Controls;
@@ -30,8 +29,11 @@ public partial class HotkeyCaptureControl : UserControl
         InitializeComponent();
         PreviewMouseLeftButtonDown += (_, _) => Focus();
         PreviewKeyDown += OnPreviewKeyDown;
-        GotKeyboardFocus += (_, _) => RootBorder.BorderBrush = Brushes.DodgerBlue;
-        LostKeyboardFocus += (_, _) => RootBorder.BorderBrush = Brushes.Gray;
+        // Fokus zvýrazněný accent barvou uživatele (ne natvrdo modrou), mimo fokus
+        // zpátky na výchozí téma-aware barvu z XAML - proto se tam vrací přes
+        // ClearValue, ne přes další natvrdo danou barvu.
+        GotKeyboardFocus += (_, _) => RootBorder.SetResourceReference(Border.BorderBrushProperty, "SystemAccentColorPrimaryBrush");
+        LostKeyboardFocus += (_, _) => RootBorder.SetResourceReference(Border.BorderBrushProperty, "ControlStrokeColorDefaultBrush");
     }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)

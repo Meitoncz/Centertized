@@ -2,12 +2,16 @@
                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-                 xmlns:pages="clr-namespace:Centertized.Views.Pages"
+                 xmlns:controls="clr-namespace:Centertized.Controls"
                  Title="Centertized Settings"
-                 Height="520" Width="820"
-                 MinHeight="420" MinWidth="640"
+                 Height="560" Width="720"
+                 MinHeight="420" MinWidth="520"
                  WindowStartupLocation="CenterScreen"
                  ExtendsContentIntoTitleBar="True">
+    <!-- Žádný NavigationView - pro appku téhle velikosti (3 sekce) je sidebar zbytečný
+         a navíc je NavigationView přímý spouštěč potvrzeného, dosud neopraveného
+         WPF-UI bugu při živém přebarvení (lepoco/wpfui#1639). Jedna scrollovatelná
+         stránka se sekcemi - stejný vzorec jako oficiální WPF-UI Gallery SettingsPage. -->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -16,14 +20,80 @@
 
         <ui:TitleBar Grid.Row="0" Title="Centertized" />
 
-        <ui:NavigationView x:Name="RootNavigation" Grid.Row="1">
-            <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem Content="Shortcuts" TargetPageType="{x:Type pages:ShortcutsPage}" />
-                <ui:NavigationViewItem Content="General" TargetPageType="{x:Type pages:GeneralPage}" />
-            </ui:NavigationView.MenuItems>
-            <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem Content="About" TargetPageType="{x:Type pages:AboutPage}" />
-            </ui:NavigationView.FooterMenuItems>
-        </ui:NavigationView>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="24,12,24,24">
+
+                <ui:TextBlock Margin="0,0,0,8" FontTypography="BodyStrong" Text="Shortcuts" />
+                <ItemsControl x:Name="ActionsList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Keyboard24}">
+                                <ui:CardControl.Header>
+                                    <StackPanel>
+                                        <ui:TextBlock FontTypography="BodyStrong" Text="{Binding DisplayName}" />
+                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                                      Text="{Binding Description}"
+                                                      TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </ui:CardControl.Header>
+                                <controls:HotkeyCaptureControl Tag="{Binding Id}"
+                                                                Loaded="OnCaptureControlLoaded"
+                                                                HotkeyCaptured="OnHotkeyCaptured" />
+                            </ui:CardControl>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="General" />
+                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Power24}">
+                    <ui:CardControl.Header>
+                        <ui:TextBlock FontTypography="Body" Text="Start with Windows" />
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch x:Name="StartWithWindowsToggle"
+                                     Checked="StartWithWindowsToggle_Toggled"
+                                     Unchecked="StartWithWindowsToggle_Toggled" />
+                </ui:CardControl>
+                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon ArrowMinimize24}">
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <ui:TextBlock FontTypography="Body" Text="Start minimized" />
+                            <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                          Text="Don't show this window when the app starts" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch x:Name="StartMinimizedToggle"
+                                     Checked="StartMinimizedToggle_Toggled"
+                                     Unchecked="StartMinimizedToggle_Toggled" />
+                </ui:CardControl>
+                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon WeatherSunny24}">
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <ui:TextBlock FontTypography="Body" Text="Theme" />
+                            <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                          Text="Light, dark, or match Windows" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ComboBox x:Name="ThemeModeCombo" MinWidth="160"
+                              SelectionChanged="ThemeModeCombo_SelectionChanged">
+                        <ComboBoxItem Content="System" />
+                        <ComboBoxItem Content="Light" />
+                        <ComboBoxItem Content="Dark" />
+                    </ComboBox>
+                </ui:CardControl>
+
+                <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="About" />
+                <ui:CardExpander Icon="{ui:SymbolIcon Info24}">
+                    <ui:CardExpander.Header>
+                        <StackPanel>
+                            <ui:TextBlock FontTypography="BodyStrong" Text="Centertized" />
+                            <ui:TextBlock x:Name="VersionText" Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </ui:CardExpander.Header>
+                    <ui:TextBlock Margin="0,0,0,8"
+                                  Text="A native Windows tray utility for window management, starting with active-window centering."
+                                  TextWrapping="Wrap" />
+                </ui:CardExpander>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </ui:FluentWindow>

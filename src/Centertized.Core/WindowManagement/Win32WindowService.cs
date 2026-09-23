@@ -14,12 +14,10 @@ public sealed class Win32WindowService : IWin32WindowService
             return false;
         }
 
-        GetWindowThreadProcessId(windowHandle, out var processId);
-        if (processId == (uint)Environment.ProcessId)
-        {
-            return false; // vlastní okno appky (Settings apod.)
-        }
-
+        // Settings okno appky je normální viditelné top-level okno jako každé jiné -
+        // není důvod ho z akcí vylučovat, uživatel ho může chtít centrovat/maximalizovat
+        // stejně jako cokoliv jiného. Skryté message-only okno pro hotkeys (jediné další
+        // okno appky) beztak nikdy neprojde IsWindowVisible kontrolou o pár řádků výš.
         var className = GetWindowClassName(windowHandle);
         if (className is "Progman" or "WorkerW")
         {

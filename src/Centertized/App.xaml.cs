@@ -72,6 +72,15 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
 
         InitializeHotkeys();
+
+        // Výchozí chování appky je ukázat Settings okno po startu (uživatel si
+        // "spustit minimalizované" může zapnout v Nastavení). --settings navíc
+        // vynutí zobrazení i přes StartMinimized - užitečné pro rychlé testování.
+        var startMinimized = SettingsStore.Load().StartMinimized;
+        if (!startMinimized || e.Args.Contains("--settings"))
+        {
+            ShowSettingsWindow();
+        }
     }
 
     private void ConfigureLogging()
@@ -161,10 +170,17 @@ public partial class App : Application
         return IntPtr.Zero;
     }
 
-    private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
+    private void SettingsMenuItem_Click(object sender, RoutedEventArgs e) => ShowSettingsWindow();
+
+    // Běžná konvence tray appek - dvojklik levým tlačítkem otevře hlavní/Settings okno.
+    private void TrayIcon_DoubleClick(object sender, RoutedEventArgs e) => ShowSettingsWindow();
+
+    private void ShowSettingsWindow()
     {
-        // SettingsWindow se zavřením jen schová (viz OnClosing tam), takže tahle
-        // instance po prvním otevření žije po celou dobu běhu appky.
+        // Zavřením se okno jen schová (viz SettingsWindow.OnClosing) - živé
+        // přebarvení teď funguje (žádné NavigationView, viz SettingsWindow.xaml),
+        // takže se stejná instance dá bezpečně držet po celou dobu běhu appky a
+        // další otevření je okamžité.
         _settingsWindow ??= new SettingsWindow();
 
         if (_settingsWindow.WindowState == WindowState.Minimized)

@@ -1,10 +1,17 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Centertized.Core.Settings;
 
 public sealed class JsonSettingsStore : ISettingsStore
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new() { WriteIndented = true };
+    // Bez JsonStringEnumConverter by se ThemeMode/Backdrop ukládaly jako čísla (0,1,2) -
+    // nečitelné a křehké, kdyby se pořadí hodnot v enumu někdy změnilo.
+    private static readonly JsonSerializerOptions SerializerOptions = new()
+    {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() },
+    };
 
     private readonly string _filePath;
 
@@ -27,7 +34,7 @@ public sealed class JsonSettingsStore : ISettingsStore
         try
         {
             var json = File.ReadAllText(_filePath);
-            return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+            return JsonSerializer.Deserialize<AppSettings>(json, SerializerOptions) ?? new AppSettings();
         }
         catch (Exception)
         {

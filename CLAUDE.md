@@ -16,8 +16,11 @@ monitor. Built to be extended with more window-management features over time.
 ## Stack
 
 - C# / .NET 10 (`net10.0-windows`), WPF.
-- WPF-UI (lepoco/wpfui) for the Fluent Design shell, Mica/Acrylic backdrop, and system
-  light/dark + accent theme sync (`Wpf.Ui.Appearance.SystemThemeWatcher`).
+- WPF-UI (lepoco/wpfui) for the Fluent Design shell, Mica backdrop, and system
+  light/dark + accent theme sync (`Wpf.Ui.Appearance.SystemThemeWatcher`/
+  `ApplicationThemeManager`). Acrylic was evaluated and dropped 2026-09-23 — the user
+  compared both live and preferred Mica as closer to native Windows look; only Mica is
+  supported now (see `ThemePreference`/theme notes below, there's no backdrop setting).
 - H.NotifyIcon.Wpf for the tray icon (`WPF-UI.Tray` was considered as a first-party
   alternative — less mature at evaluation time; revisit if H.NotifyIcon causes friction).
 - Serilog for file logging under `%AppData%\Centertized\logs` — this is a tray-only
@@ -36,7 +39,28 @@ Three projects:
 Extensibility contract for new hotkey-triggered features: implement `IWindowAction` in
 `Centertized.Core/Actions/`, register it in `WindowActionCatalog`. That should be the
 only change needed — no touching `HotkeyActionRegistry`, the tray, or the Shortcuts
-settings page (it renders off the catalog, one row per registered action).
+section of the Settings window (it renders off the catalog, one row per registered
+action).
+
+### Settings window architecture (rewritten 2026-09-23)
+
+`SettingsWindow` is **one single scrollable `FluentWindow`, no `NavigationView`, no
+separate `Page` classes**. All content (Shortcuts, General, About) lives directly in
+`SettingsWindow.xaml` as sections inside one `ScrollViewer` > `StackPanel`, using
+`ui:TextBlock FontTypography="BodyStrong"` as section headers and `ui:CardControl`/
+`ui:CardExpander` as individual setting rows — this mirrors the official WPF-UI Gallery's
+own `SettingsPage.xaml` pattern exactly (fetched from
+[lepoco/wpfui](https://github.com/lepoco/wpfui) on GitHub as a reference before writing
+this). All Shortcuts/General/About logic (hotkey capture wiring, autostart toggle, theme
+combo, About version text) lives together in `SettingsWindow.xaml.cs`.
+
+This replaced an earlier `NavigationView`-based sidebar design from Phase 1. Two reasons,
+both from direct user feedback 2026-09-23: (1) a sidebar felt oversized for an app with
+only 3 small sections ("nevhodný pro tenhle typ aplikace"), and (2) removing
+`NavigationView` incidentally fixed the live-theme-switch corruption bug (see Known
+issues) since that bug is specifically triggered by `NavigationView`. Don't reintroduce
+`NavigationView` here without re-checking whether lepoco/wpfui#1639 has been fixed
+upstream first.
 
 Key non-obvious technical constraints — these are by design, don't try to "fix" them:
 - Hotkey conflict detection (`RegisterHotKey` failing with `ERROR_HOTKEY_ALREADY_REGISTERED`)
@@ -53,33 +77,55 @@ Key non-obvious technical constraints — these are by design, don't try to "fix
 - DPI awareness must be Per-Monitor V2 (declared in `app.manifest`). Verify this via Task
   Manager's "DPI Awareness" column after any TargetFramework/SDK change — this has
   silently regressed before in the WPF ecosystem despite a correct manifest.
-- WPF-UI controls (`FluentWindow`, `NavigationView`, ...) render/work only if
-  `App.xaml`'s `Application.Resources` merges `<ui:ThemesDictionary Theme="Light" />` +
+- WPF-UI controls (`FluentWindow`, `CardControl`, ...) render/work only if `App.xaml`'s
+  `Application.Resources` merges `<ui:ThemesDictionary Theme="Light" />` +
   `<ui:ControlsDictionary />` (see `App.xaml`). Without this they have no control
-  template at all — internal named parts stay null and things like
-  `NavigationView.Navigate(...)` throw `NullReferenceException` deep inside WPF-UI
-  rather than failing obviously. Found this the hard way in Phase 1; don't remove it.
-  `SystemThemeWatcher.Watch(window)` only handles *live* theme syncing on top of this,
-  it doesn't replace the initial merge.
-- `NavigationView.Navigate(...)` (and similar calls needing the control's template)
-  must not run directly in a window's constructor — the template isn't applied yet at
-  that point. Hook `RootNavigation.Loaded` and navigate from there instead
-  (see `SettingsWindow.xaml.cs`).
+  template at all. Found this the hard way in Phase 1; don't remove it.
+  `SystemThemeWatcher.Watch(window)`/`ApplicationThemeManager.Apply(...)` only handle
+  *live* theme syncing on top of this, they don't replace the initial merge.
+- **`WindowBackdropType` must be set directly on the `FluentWindow` instance**
+  (`WindowBackdropType = WindowBackdropType.Mica;` in code, or the XAML attribute) —
+  passing a backdrop type to `ApplicationThemeManager.Apply(theme, backdrop, ...)` alone
+  does *not* turn on the actual DWM Mica compositing on that window; it only affects
+  which color resources get picked. Skip the direct property and Mica silently never
+  renders at all (found this 2026-09-23 — the window just showed a flat WPF-drawn
+  background, no blur, no accent tint).
+- **Use `<ui:TextBlock>` (with `FontTypography="..."`), not plain `<TextBlock>`, for any
+  primary text in WPF-UI windows.** Plain `TextBlock` doesn't inherit a theme-aware
+  foreground from anywhere in this setup and renders as plain black text in dark mode —
+  looks fine in Light, silently broken in Dark. For secondary/muted text, set
+  `Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"` explicitly (WPF-UI's own
+  markup extension, not plain `{DynamicResource ...}` — that's what the library's own
+  Gallery app uses). Found this 2026-09-23 from a user screenshot showing genuinely
+  black (not just low-contrast) text in dark mode on every page using bare `<TextBlock>`.
+- `IWin32WindowService.IsEligibleForActions` must **not** exclude windows belonging to
+  Centertized's own process. It's tempting to add that exclusion (early versions did,
+  reasoning "don't act on our own Settings window") but it's wrong: SettingsWindow is a
+  normal visible top-level window and the user reasonably expects to be able to center/
+  maximize it like anything else. The only Centertized-owned window that should never
+  match is the hidden message-only hotkey sink, and that's already filtered out by the
+  `IsWindowVisible` check earlier in the same method — no separate process-id check is
+  needed. Removed 2026-09-23 after the user asked "why can't I center this window with
+  its own shortcut?" and the answer was "no good reason."
 
-## Known issues (deferred to Phase 4 polish)
+## Known issues
 
 - Tray context menu (`App.xaml`'s `ContextMenu`/`MenuItem` on the `TaskbarIcon`) renders
   with plain default Windows styling (white) even in dark mode — WPF-UI doesn't seem to
   theme it automatically the way it themes windows/pages. Likely fix: either explicit
   WPF-UI-aware styling on the menu, or switch the tray icon to the `WPF-UI.Tray` package
   (its `NotifyIcon`/menu is theme-synced out of the box) — see the Stack section above,
-  this was flagged as a tradeoff when H.NotifyIcon.Wpf was chosen.
-- Switching the Windows light/dark theme *while* SettingsWindow is open produces a
-  visually broken half-and-half state: the content area (right side) picks up the new
-  theme's brush correctly, but the NavigationView pane / Mica backdrop (left side, title
-  bar) stays on the old (dark) look. Looks like a sync gap between WPF-UI's resource
-  dictionary swap and the DWM-level Mica dark-mode attribute. Not yet root-caused —
-  needs investigation before relying on live theme switching looking correct.
+  this was flagged as a tradeoff when H.NotifyIcon.Wpf was chosen. Still open.
+- ~~Switching the Windows light/dark theme while SettingsWindow is open produces a
+  visually broken half-and-half state~~ **RESOLVED 2026-09-23** — root cause confirmed
+  as a real, still-open upstream bug ([lepoco/wpfui#1639](https://github.com/lepoco/wpfui/issues/1639)):
+  `ApplicationThemeManager.Apply()`/`ApplySystemTheme()` breaks a `NavigationView`'s pane
+  and content when called on an already-open window. Fix was architectural, not a
+  workaround: **`SettingsWindow` no longer uses `NavigationView` at all** — see
+  "Settings window architecture" below. Without `NavigationView`, live theme switching
+  via `SystemThemeWatcher`/`ApplicationThemeManager.Apply()` on the open window works
+  correctly, confirmed by the user switching System/Light/Dark live with no reopen and
+  no visual corruption.
 
 Full rationale/tradeoffs (library comparisons, phased roadmap, verification steps) came
 from the architecture-planning session on 2026-09-22 — ask the user if you need that
@@ -168,7 +214,7 @@ Still open from Phase 4: a first-run tray balloon to help users discover the ico
 exists.
 
 Phase 5 (extensibility proof) is done, using the "toggle maximize/restore to previous
-position" idea from `IDEAS.md` as the real second action (`ToggleMaximizeAction`) rather
+position" idea from `TODO.md` as the real second action (`ToggleMaximizeAction`) rather
 than a throwaway demo. Confirmed the success criterion from the plan: adding it touched
 exactly `Centertized.Core/Actions/ToggleMaximizeAction.cs` (new file) and one line in
 `App.xaml.cs`'s `ActionCatalog = new WindowActionCatalog([...])` — nothing in
@@ -197,33 +243,53 @@ Remaining open items (not blocking, just not done yet):
   click+keypress interaction, the toggle switch's click path, and the tray balloon's
   on-screen appearance.
 - Elevated-window (UIPI) behavior still unverified live (this dev machine has UAC off).
-- The "auto-center every newly-opened window" idea from `IDEAS.md` is still open and
+- The "auto-center every newly-opened window" idea from `TODO.md` is still open and
   needs a different mechanism than the hotkey/`IWindowAction` pattern (something like a
   `SetWinEventHook(EVENT_SYSTEM_FOREGROUND, ...)` watcher toggled from a settings
   checkbox, not a catalog action) — worth designing separately when picked up.
 
-## Session end 2026-09-22: visual polish pass needed next
+## Session 2026-09-23: visual polish pass — done
 
-User did a hands-on pass and reported: core functionality (tray, hotkey, centering,
-Settings shell) works, but the **visual polish needs real work** — specifically the
-feeling that Mica/Acrylic isn't being applied correctly. Two concrete asks for next
-session (also in `IDEAS.md`):
+Picked up the 2026-09-22 TODO (Mica/Acrylic wasn't rendering correctly, wanted a
+backdrop picker). What actually shipped, after several rounds of live feedback with
+screenshots from the user's real screen:
 
-1. **Add a backdrop-type picker to Settings (General page)** — let the user choose
-   Mica / Acrylic / None instead of the hardcoded `SystemThemeWatcher.Watch(this)`
-   default in `SettingsWindow.xaml.cs`. Implementation sketch: add a
-   `WindowBackdropType` (or a simple string) field to `AppSettings`
-   (`Centertized.Core/Settings/AppSettings.cs`), a picker control on `GeneralPage`, and
-   call `SystemThemeWatcher.Watch(this, chosenBackdrop)` (it takes a
-   `Wpf.Ui.Controls.WindowBackdropType` as its second param, confirmed in Phase 1) with
-   the saved choice instead of the implicit default. Apply it on `SettingsWindow`
-   construction and whenever the setting changes while the window is open.
-2. **General Mica/Acrylic correctness pass** — this is likely the same root cause as
-   the already-documented Known Issue above (live theme-switch leaves the NavigationView
-   pane / title bar area out of sync with the content area). Worth investigating
-   properly this time (WPF-UI GitHub issues/discussions for known Mica bugs, whether
-   `ExtendsContentIntoTitleBar` or `WindowCornerPreference` interact badly with the
-   backdrop, whether it's specific to this Windows build) rather than deferring again —
-   the user explicitly flagged this as the top priority for the next session.
+- **Theme picker** (System default / Light / Dark) on the General section —
+  `ThemePreference` enum in `Centertized.Core/Settings`, persisted in `AppSettings`.
+  No backdrop picker — Acrylic got dropped entirely after a direct side-by-side
+  comparison (see Stack section).
+- **Root-caused why Mica wasn't rendering**: `WindowBackdropType` has to be set on the
+  `FluentWindow` instance directly, not just passed to `ApplicationThemeManager.Apply()`
+  — see Known issues / technical constraints above.
+- **Root-caused why dark mode had black text**: bare `<TextBlock>` doesn't pick up a
+  theme-aware foreground in this setup; needed `<ui:TextBlock>` /
+  `{ui:ThemeResource TextFillColorSecondaryBrush}` everywhere, matching the WPF-UI
+  Gallery's own reference XAML (fetched from GitHub for this).
+- **Removed `NavigationView` entirely** — user feedback was that a sidebar felt wrong
+  for a 3-section settings window, and this happened to also be the exact trigger for
+  the confirmed-upstream live-theme-switch bug (lepoco/wpfui#1639). One architectural
+  change fixed both: see "Settings window architecture" above. Live theme switching
+  (System/Light/Dark) now works with **no window reopen and no visible refresh**,
+  confirmed by the user.
+- **Startup behavior flipped**: the Settings window now shows by default when the app
+  starts (previously: tray-only, silent). Added a "Start minimized" toggle
+  (`AppSettings.StartMinimized`) for users who want the old tray-only behavior back.
+- **Tray icon double-click** now opens Settings too (`TrayLeftMouseDoubleClick` on the
+  `TaskbarIcon` in `App.xaml`) — standard tray-app convention that was missing.
+- **Fixed a real usability bug the user caught by trying it**: `IsEligibleForActions`
+  used to exclude Centertized's own windows, which meant the center/maximize hotkeys
+  silently did nothing when the Settings window itself was focused. No good reason for
+  that exclusion existed — removed (see technical constraints above).
 
-Do these two together as one pass, not separately — they're the same subsystem.
+All of the above was verified either by the user directly (screenshots, live testing)
+or by this session using `PrintWindow`+`SetProcessDpiAwarenessContext` to screenshot the
+running window and inspect it directly via the Read tool — a reusable pattern for
+visually checking WPF rendering without needing the user, documented here since it
+proved genuinely useful: capture with `PrintWindow(hwnd, hdc, PW_RENDERFULLCONTENT)`
+(flag `0x2`) into a `Bitmap`, find the target `hwnd` by enumerating windows for the
+process and matching on title (`FindWindow` alone was unreliable in testing).
+
+Still open, unchanged from before: tray context menu theming (Known issues), a
+first-run tray balloon, elevated-window (UIPI) behavior unverified live, and the
+"auto-center every newly-opened window" idea from `TODO.md` (needs a
+`SetWinEventHook`-based watcher, a different mechanism than the hotkey/action pattern).

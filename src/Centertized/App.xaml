@@ -33,7 +33,6 @@
                                 <ui:SymbolIcon Symbol="Settings20" />
                             </ui:MenuItem.Icon>
                         </ui:MenuItem>
-                        <Separator />
                         <ui:MenuItem Header="Exit" Click="ExitMenuItem_Click">
                             <ui:MenuItem.Icon>
                                 <ui:SymbolIcon Symbol="ArrowExit20" />

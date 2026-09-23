@@ -27,6 +27,12 @@ public static class SmoothScrollBehavior
     private static readonly DependencyProperty AnimatedOffsetProperty = DependencyProperty.RegisterAttached(
         "AnimatedOffset", typeof(double), typeof(SmoothScrollBehavior), new PropertyMetadata(0d, OnAnimatedOffsetChanged));
 
+    // Cíl rozjeté animace, na který navazuje případný další "cvak" kolečka - bez
+    // tohohle by se při rychlém scrollování (zrychlení) počítal každý další krok
+    // z aktuální, ještě neuklidněné pozice animace, což vypadalo trhaně/poskakovaně.
+    private static readonly DependencyProperty PendingTargetProperty = DependencyProperty.RegisterAttached(
+        "PendingTarget", typeof(double?), typeof(SmoothScrollBehavior), new PropertyMetadata(null));
+
     // Kolik pixelů na jeden "cvak" kolečka - Delta je typicky +-120, tohle dává
     // podobný krok, na jaký jsou lidé zvyklí z Windows Nastavení.
     private const double PixelsPerWheelNotch = 1.2;
@@ -54,13 +60,18 @@ public static class SmoothScrollBehavior
         var scrollViewer = (ScrollViewer)sender;
         e.Handled = true;
 
-        var from = scrollViewer.VerticalOffset;
-        var target = Math.Clamp(from - e.Delta * PixelsPerWheelNotch, 0, scrollViewer.ScrollableHeight);
+        // Navázat na cíl předchozí (ještě běžící) animace, ne na aktuální
+        // "rozjetou" pozici - jinak rychlé po sobě jdoucí cvaknutí kolečkem
+        // efektivně zkracují ujetou dráhu každého kroku a scroll poskakuje.
+        var baseline = (double?)scrollViewer.GetValue(PendingTargetProperty) ?? scrollViewer.VerticalOffset;
+        var target = Math.Clamp(baseline - e.Delta * PixelsPerWheelNotch, 0, scrollViewer.ScrollableHeight);
+        scrollViewer.SetValue(PendingTargetProperty, target);
 
-        var animation = new DoubleAnimation(from, target, AnimationDuration)
+        var animation = new DoubleAnimation(scrollViewer.VerticalOffset, target, AnimationDuration)
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
         };
+        animation.Completed += (_, _) => scrollViewer.ClearValue(PendingTargetProperty);
         scrollViewer.BeginAnimation(AnimatedOffsetProperty, animation, HandoffBehavior.SnapshotAndReplace);
     }
 

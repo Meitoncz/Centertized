@@ -255,16 +255,11 @@ log file itself is correctly UTF-8 encoded; it's purely a Windows PowerShell 5.1
 `Get-Content` default-encoding-detection quirk, not a bug in the app.
 
 Remaining open items (not blocking, just not done yet):
-- First-run tray balloon so users discover the icon exists.
 - Everything flagged above as "needs a human": visual check of the Settings
   window/tray-menu theming issues (see Known Issues), the hotkey capture UI's actual
   click+keypress interaction, the toggle switch's click path, and the tray balloon's
   on-screen appearance.
 - Elevated-window (UIPI) behavior still unverified live (this dev machine has UAC off).
-- The "auto-center every newly-opened window" idea from `TODO.md` is still open and
-  needs a different mechanism than the hotkey/`IWindowAction` pattern (something like a
-  `SetWinEventHook(EVENT_SYSTEM_FOREGROUND, ...)` watcher toggled from a settings
-  checkbox, not a catalog action) — worth designing separately when picked up.
 
 ## Session 2026-09-23: visual polish pass — done
 
@@ -307,7 +302,68 @@ proved genuinely useful: capture with `PrintWindow(hwnd, hdc, PW_RENDERFULLCONTE
 (flag `0x2`) into a `Bitmap`, find the target `hwnd` by enumerating windows for the
 process and matching on title (`FindWindow` alone was unreliable in testing).
 
-Still open, unchanged from before: tray context menu theming (Known issues), a
-first-run tray balloon, elevated-window (UIPI) behavior unverified live, and the
-"auto-center every newly-opened window" idea from `TODO.md` (needs a
-`SetWinEventHook`-based watcher, a different mechanism than the hotkey/action pattern).
+Still open, unchanged from before: tray context menu theming (Known issues) and
+elevated-window (UIPI) behavior unverified live. First-run tray balloon and
+auto-center-new-windows shipped later the same day — see the next session entry below.
+
+## Session 2026-09-23 (cont'd): auto-center new windows + first-run tray balloon
+
+Picked up the two remaining `TODO.md` items.
+
+**First-run tray balloon**: `AppSettings.HasShownTrayHint` flag, shown once from
+`SettingsWindow.OnClosing` via `App.ShowTrayHintIfNeeded()` the first time the window is
+hidden (not closed) — the moment the app "disappears" into the tray for the first time.
+
+**Auto-center new windows** (`NewWindowWatcher.cs`, `Centertized.Core/WindowManagement`):
+a `SetWinEventHook` watcher, toggled by a General-section `ToggleSwitch`
+(`AppSettings.AutoCenterNewWindows`), not a catalog action — it has no hotkey, so it
+doesn't fit the `IWindowAction`/`WindowActionCatalog` pattern at all.
+
+Design notes worth keeping for next time:
+- **Hooked event is `EVENT_OBJECT_SHOW`, not `EVENT_SYSTEM_FOREGROUND`.** First attempt
+  used FOREGROUND (fires when a window becomes active) plus an artificial ~200ms "settle"
+  delay before centering (worry: some apps resize themselves right after creation). User
+  feedback: this made the jump *more* visible, not less — the window fully rendered at its
+  original spot, sat there for 200ms, then visibly jumped to center. Fixed by switching to
+  `EVENT_OBJECT_SHOW` (fires at `ShowWindow(SW_SHOW)`, earlier than FOREGROUND) and
+  dropping the artificial delay — center immediately, with one ~40ms retry only if the
+  first geometry read fails (DWM occasionally hasn't computed
+  `DWMWA_EXTENDED_FRAME_BOUNDS` yet at the exact SHOW instant). This is a **best-effort**
+  improvement, not a guarantee — Centertized reacts to another process's window
+  asynchronously (via a hidden message-loop callback), and Windows has no API to
+  reposition a foreign window before its first paint. Said this plainly to the user rather
+  than overselling it.
+- **`WindowCenterer` extracted** (`Centertized.Core/Actions/WindowCenterer.cs`) — the
+  actual geometry-read + `SetWindowPos` logic used to live only in
+  `CenterActiveWindowAction`, which always centers `GetForegroundWindowHandle()`. The
+  watcher needs to center the *specific* hwnd from the WinEvent, which is frequently not
+  yet the foreground window when `EVENT_OBJECT_SHOW` fires — so it can't reuse
+  `CenterActiveWindowAction.ExecuteAsync()` as-is. `WindowCenterer.TryCenter(service,
+  logger, hwnd, failureLogLevel)` is the shared core both now call.
+- **`failureLogLevel` parameter exists for a real reason, not speculative flexibility**:
+  `EVENT_OBJECT_SHOW` fires for far more than top-level app windows — WPF's own internal
+  popups (`ComboBox` dropdowns, tooltips, `ToggleSwitch` template parts) showed up during
+  Settings-window construction alone, several *per* window shown, mostly failing the
+  geometry read (not real top-level windows). First version logged this at Warning like
+  the hotkey path does — and since `TrayNotificationSink` turns Warning+ into a tray
+  balloon, this produced a burst of tray balloons just from the Settings window opening,
+  and would keep firing constantly during ordinary use (any menu, tooltip, dropdown
+  anywhere in the system). The hotkey-triggered `CenterActiveWindowAction` still logs
+  Warning (a user explicitly pressed a key; silence would be confusing). The watcher's own
+  calls pass `LogLevel.Debug` (filtered out entirely by `MinimumLevel.Information()`) —
+  encountering an ineligible transient window is the expected common case for a
+  system-wide passive watcher, not something worth surfacing.
+- `IsEligibleForActions` filtering (owner check, tool-window check, visibility) already
+  catches most noise, but evidently not all of it at `EVENT_OBJECT_SHOW` granularity —
+  worth remembering if more false-positive window types turn up later.
+- Skips windows already seen (`HashSet<IntPtr>` inside the watcher, cleared on
+  `Stop()`/toggle-off) so switching back to an existing window (Alt+Tab) doesn't
+  re-trigger centering — matches "newly *opened*", not "newly focused".
+- Verified for real, no GUI: pre-seeded `settings.json` with `AutoCenterNewWindows: true`,
+  launched the app, opened Notepad via PowerShell (no `MoveWindow` needed — the window's
+  own default position was off-center already), waited briefly, and read back its DWM
+  extended-frame-bounds center vs. the monitor's work-area center — matched to within 1px,
+  and the activity log showed the expected "Okno … přesunuto" entry timed to match. Also
+  confirmed via the log that switching the log level to Debug for the watcher's own
+  failures eliminated the Warning-level spam from Settings-window-internal popups without
+  losing the hotkey path's Warning behavior.

@@ -1,4 +1,4 @@
-- přepínač v GUI, který bude zapínat to, že každé nově otevřené okno se otevře rovnou vycentrované přesně uprostřed obrazovky
+- [HOTOVO] přepínač v GUI, který bude zapínat to, že každé nově otevřené okno se otevře rovnou vycentrované přesně uprostřed obrazovky — NewWindowWatcher (SetWinEventHook na EVENT_OBJECT_SHOW, ne FOREGROUND - kvůli menšímu "poskoku" viz CLAUDE.md), přepínač v Nastavení → General → "Auto-center new windows" (nad Theme)
 - [HOTOVO] druhá zkratka pro to, aby aktivní okno provedlo maximized s tím, že po opětovném použití zkratky se okno vrátí do předchozího stavu, velikosti a polohy — ToggleMaximizeAction, přidej si zkratku v Nastavení → Shortcuts
 
 ## Vizuální pass 2026-09-22/23 — [HOTOVO]
@@ -49,8 +49,5 @@
 - Tray context menu pořád nevypadá úplně nativně (chybí třeba zaoblený hover jako u
   Flow Launcheru) - ikonky a ui:MenuItem přidané, zbytek je defaultní ControlsDictionary
   styl.
-- První spuštění appky by mohlo ukázat tray "balloon", ať uživatel objeví ikonu.
 - Elevated (admin) okna - chování zdokumentované, ale živě neověřené (tenhle stroj má
   vypnuté UAC).
-- Nápad "auto-centrovat každé nově otevřené okno" (řádek 1 výš) - potřebuje jiný
-  mechanismus než hotkey/IWindowAction (SetWinEventHook na vznik okna), zatím nenavržené.

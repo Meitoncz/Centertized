@@ -44,6 +44,7 @@ public partial class SettingsWindow : FluentWindow
         StartWithWindowsToggle.IsChecked = _autostartService.IsEnabled();
         StartMinimizedToggle.IsChecked = settings.StartMinimized;
         ThemeModeCombo.SelectedIndex = (int)settings.ThemeMode;
+        AutoCenterNewWindowsToggle.IsChecked = settings.AutoCenterNewWindows;
         _isInitializing = false;
 
         VersionText.Text = $"Version {Assembly.GetExecutingAssembly().GetName().Version}";
@@ -104,6 +105,28 @@ public partial class SettingsWindow : FluentWindow
         var settings = App.SettingsStore.Load();
         settings.StartMinimized = StartMinimizedToggle.IsChecked == true;
         App.SettingsStore.Save(settings);
+    }
+
+    private void AutoCenterNewWindowsToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_isInitializing)
+        {
+            return;
+        }
+
+        var enabled = AutoCenterNewWindowsToggle.IsChecked == true;
+        var settings = App.SettingsStore.Load();
+        settings.AutoCenterNewWindows = enabled;
+        App.SettingsStore.Save(settings);
+
+        if (enabled)
+        {
+            App.NewWindowWatcher.Start();
+        }
+        else
+        {
+            App.NewWindowWatcher.Stop();
+        }
     }
 
     private void OnCaptureControlLoaded(object sender, RoutedEventArgs e)

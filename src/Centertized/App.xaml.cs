@@ -43,6 +43,8 @@ public partial class App : Application
 
     public static WindowActionCatalog ActionCatalog { get; private set; } = null!;
 
+    public static NewWindowWatcher NewWindowWatcher { get; private set; } = null!;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -131,11 +133,19 @@ public partial class App : Application
         _hotkeyMessageSource = new HwndSource(parameters);
         _hotkeyMessageSource.AddHook(HotkeyWndProc);
 
+        var windowService = new Win32WindowService();
         ActionCatalog = new WindowActionCatalog([new CenterActiveWindowAction(), new ToggleMaximizeAction()]);
-        HotkeyRegistry = new HotkeyActionRegistry(new Win32HotkeyRegistrar(), ActionCatalog, new Win32WindowService(), _logger, _hotkeyMessageSource.Handle);
+        HotkeyRegistry = new HotkeyActionRegistry(new Win32HotkeyRegistrar(), ActionCatalog, windowService, _logger, _hotkeyMessageSource.Handle);
         SettingsStore = new JsonSettingsStore();
 
+        NewWindowWatcher = new NewWindowWatcher(windowService, _logger);
+
         var settings = SettingsStore.Load();
+        if (settings.AutoCenterNewWindows)
+        {
+            NewWindowWatcher.Start();
+        }
+
         foreach (var (actionId, hotkeyText) in settings.Hotkeys)
         {
             if (ActionCatalog.TryGetById(actionId) is null)
@@ -232,6 +242,7 @@ public partial class App : Application
         // "duch" ikona až do prvního najetí myší na její místo.
         _trayIcon?.Dispose();
         _hotkeyMessageSource?.Dispose(); // uvolní i všechny RegisterHotKey registrace na tomhle okně
+        NewWindowWatcher?.Dispose();
         if (_ownsSingleInstanceMutex)
         {
             _singleInstanceMutex?.ReleaseMutex();

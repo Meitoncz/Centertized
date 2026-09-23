@@ -19,4 +19,7 @@ public sealed class AppSettings
 
     /// <summary>Jestli appka už jednou ukázala tray balonek "appka běží na pozadí".</summary>
     public bool HasShownTrayHint { get; set; }
+
+    /// <summary>Automaticky vycentrovat každé nově otevřené okno (viz NewWindowWatcher).</summary>
+    public bool AutoCenterNewWindows { get; set; }
 }

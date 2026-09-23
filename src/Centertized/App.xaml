@@ -20,7 +20,12 @@
             <tb:TaskbarIcon x:Key="TrayIcon" ToolTipText="Centertized"
                             TrayLeftMouseDoubleClick="TrayIcon_DoubleClick">
                 <tb:TaskbarIcon.ContextMenu>
-                    <ContextMenu>
+                    <!-- Obyčejný ContextMenu/MenuItem si WPF-UI implicitně neobarví
+                         (na rozdíl od třeba ComboBoxu/ToggleSwitche) - explicitní
+                         theme-aware barvy, ať to není bílé i v dark režimu. -->
+                    <ContextMenu Background="{ui:ThemeResource ApplicationBackgroundBrush}"
+                                 Foreground="{ui:ThemeResource TextFillColorPrimaryBrush}"
+                                 BorderBrush="{ui:ThemeResource ControlStrokeColorDefaultBrush}">
                         <MenuItem Header="Settings" Click="SettingsMenuItem_Click" />
                         <Separator />
                         <MenuItem Header="Exit" Click="ExitMenuItem_Click" />

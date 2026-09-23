@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -81,11 +82,23 @@ public partial class HotkeyCaptureControl : UserControl
             result |= HotkeyModifiers.Shift;
         }
 
-        if (modifiers.HasFlag(ModifierKeys.Windows))
+        // Keyboard.Modifiers na Win klávesu není spolehlivý - shell si ji často
+        // zpracovává zvláštním low-level hookem dřív, než se to k WPF vůbec dostane
+        // normální cestou. GetAsyncKeyState na VK_LWIN/VK_RWIN funguje spolehlivě.
+        if (modifiers.HasFlag(ModifierKeys.Windows) || IsWindowsKeyPhysicallyDown())
         {
             result |= HotkeyModifiers.Windows;
         }
 
         return result;
     }
+
+    private const int VK_LWIN = 0x5B;
+    private const int VK_RWIN = 0x5C;
+
+    [DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int vKey);
+
+    private static bool IsWindowsKeyPhysicallyDown() =>
+        (GetAsyncKeyState(VK_LWIN) & 0x8000) != 0 || (GetAsyncKeyState(VK_RWIN) & 0x8000) != 0;
 }

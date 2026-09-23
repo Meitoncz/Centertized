@@ -216,17 +216,17 @@ access) — worth a human glance next time a Warning-level event fires for real.
 verified directly, but the toggle's click path itself wasn't (same "needs a human" gap
 as the hotkey capture UI). About page shows the real assembly version now.
 
-Icon done: `src/Centertized/Resources/icon.ico` (multi-size, PNG-in-ICO — 16 through 256
-px), a simple "viewfinder corners + center dot" design generated programmatically
-(System.Drawing/GDI+, source not kept in the repo — it was a scratch one-off, see git
-log if it needs regenerating/tweaking). Wired via `<ApplicationIcon>` in
-`Centertized.csproj` (so it's the .exe's own file icon too) and the tray icon loads it
-via `Icon.ExtractAssociatedIcon(...)` on the running exe rather than duplicating the
-file — one source of truth. User picked this as a placeholder in the "user's own logo
-later" sense — they may swap in their own icon eventually, but this one is a real,
-finished icon, not a stub. Verified by extracting the icon straight from the built .exe
-and inspecting it (a Read tool can view images directly — no human needed for this
-particular check, unlike most of the UI verification elsewhere in this file).
+Icon: the original programmatic placeholder was replaced 2026-09-23 by the user's own
+custom logo (`Resources/centertized_icon.png`, 1085x1085, plus the Affinity source
+`centertized_icon.af`, kept in the repo as the editable master). `Resources/icon.ico`
+is generated from that PNG (PNG-in-ICO, sizes 16/20/24/32/40/48/64/128/256, bicubic
+downscale via System.Drawing) — **regenerate icon.ico from the PNG if the logo changes**,
+don't hand-edit the .ico. It's used in three places: `<ApplicationIcon>` in
+`Centertized.csproj` (the .exe's file icon), as a WPF `<Resource>` for the Settings
+window's `ui:TitleBar.Icon` (`ui:ImageIcon`), and for the tray icon via
+`App.LoadTrayIcon()`, which loads the ICO resource at a DPI-appropriate size (16 * DPI
+scale) — `Icon.ExtractAssociatedIcon` was dropped because it only ever returns 32x32,
+which looks soft in the tray on high-DPI displays.
 
 Still open from Phase 4: a first-run tray balloon to help users discover the icon
 exists.

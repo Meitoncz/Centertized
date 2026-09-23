@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Centertized.Core.Actions;
 using Centertized.Core.Hotkeys;
@@ -60,10 +61,7 @@ public partial class App : Application
         }
 
         _trayIcon = (TaskbarIcon)FindResource("TrayIcon");
-        // Ikona appky je zapsaná jako <ApplicationIcon> v csproj (jde tedy i do .exe
-        // resource), tady se prostě znovu použije - žádná zvlášť kopírovaná kopie.
-        _trayIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location)
-            ?? System.Drawing.SystemIcons.Application;
+        _trayIcon.Icon = LoadTrayIcon();
         _trayIcon.ForceCreate();
 
         // Tray notification sink potřebuje hotovou tray ikonu, proto se Serilog
@@ -83,6 +81,22 @@ public partial class App : Application
         {
             ShowSettingsWindow();
         }
+    }
+
+    // ExtractAssociatedIcon vrací vždy jen 32x32, což je na vyšším DPI v tray rozmazané -
+    // ICO má víc velikostí, tak si vybereme tu, kterou tray opravdu potřebuje.
+    private static System.Drawing.Icon LoadTrayIcon()
+    {
+        var resource = GetResourceStream(new Uri("pack://application:,,,/Resources/icon.ico"));
+        if (resource is null)
+        {
+            return System.Drawing.SystemIcons.Application;
+        }
+
+        using var stream = resource.Stream;
+        var dpi = VisualTreeHelper.GetDpi(new System.Windows.Controls.Control()).DpiScaleX;
+        var size = (int)Math.Round(16 * Math.Max(dpi, 1.0));
+        return new System.Drawing.Icon(stream, new System.Drawing.Size(size, size));
     }
 
     private void ConfigureLogging()

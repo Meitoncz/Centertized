@@ -58,7 +58,9 @@ public sealed class NewWindowWatcher : IDisposable
             return;
         }
 
-        _hookHandle = SetWinEventHook(EVENT_OBJECT_SHOW, EVENT_OBJECT_SHOW, IntPtr.Zero, _callback, 0, 0, WINEVENT_OUTOFCONTEXT);
+        // Rozsah DESTROY..HIDE zahrnuje i SHOW (0x8001-0x8003) - DESTROY/HIDE slouží k
+        // "zapomenutí" okna, viz OnWinEvent.
+        _hookHandle = SetWinEventHook(EVENT_OBJECT_DESTROY, EVENT_OBJECT_HIDE, IntPtr.Zero, _callback, 0, 0, WINEVENT_OUTOFCONTEXT);
     }
 
     public void Stop()
@@ -86,9 +88,19 @@ public sealed class NewWindowWatcher : IDisposable
                 return;
             }
 
+            // Zavřené/skryté okno zapomenout - UWP rámce (Nastavení, Store...) se po
+            // zavření jen skryjí a při dalším otevření se znovu ukážou se stejným hwnd,
+            // a Windows navíc hwnd hodnoty recykluje. Bez tohohle by se znovuotevřené
+            // okno přeskočilo jako "už viděné" a necentrovalo se.
+            if (eventType != EVENT_OBJECT_SHOW)
+            {
+                _seenWindows.Remove(hwnd);
+                return;
+            }
+
             if (!_seenWindows.Add(hwnd))
             {
-                return; // tohle okno jsme už jednou zpracovali (např. návrat přes Alt+Tab)
+                return; // tohle okno už je zobrazené a zpracované
             }
 
             if (!_windowService.IsEligibleForActions(hwnd) || _windowService.IsMinimized(hwnd) || _windowService.IsMaximized(hwnd))

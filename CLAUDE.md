@@ -395,3 +395,22 @@ apps/animations. Re-verified plain Notepad still centers on the very first (imme
 attempt afterward, so the extra passes don't reintroduce the flash for normal apps —
 `WindowCenterer.TryCenter` is idempotent (re-centering an already-centered window is a
 harmless no-op `SetWindowPos` to the same spot).
+
+### Follow-up: reopened UWP windows weren't re-centered (`_seenWindows` staleness)
+
+User confirmed: after closing Settings/Store and opening them again, no centering.
+Cause: closing a UWP frame window only *hides* it, the next launch re-shows the same
+`hwnd`, and `NewWindowWatcher._seenWindows` (dedup set) still contained it — so the
+`SHOW` event was skipped as "already seen". Same flaw would hit any recycled `hwnd`
+value. Fix: the hook now covers `EVENT_OBJECT_DESTROY..EVENT_OBJECT_HIDE`
+(0x8001-0x8003, includes SHOW) and `OnWinEvent` removes the hwnd from the set on
+DESTROY/HIDE, so "seen" means "currently shown and already handled", not "ever seen".
+Verified: open Settings, move it, `WM_CLOSE`, reopen -> centered again; three cold
+starts (ApplicationFrameHost killed first) all settled on the centered position by ~530ms.
+
+PowerShell test-script gotchas found while verifying this (worth knowing next time):
+Windows PowerShell 5.1 reads a BOM-less .ps1 as ANSI, so a literal like "Nastavení"
+silently never matches — build such strings from `[char]` codes; and variables inside a
+scriptblock passed as an `EnumWindows` delegate are unreliable — collect raw results into
+a `$script:` ArrayList and filter outside the callback.
+

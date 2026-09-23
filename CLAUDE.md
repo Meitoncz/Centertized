@@ -63,6 +63,24 @@ issues) since that bug is specifically triggered by `NavigationView`. Don't rein
 upstream first.
 
 Key non-obvious technical constraints — these are by design, don't try to "fix" them:
+- **Win+letter/number cannot be captured in `HotkeyCaptureControl`, and don't try to fix
+  this with a global `WH_KEYBOARD_LL` hook again.** Win+function-key (e.g. Win+F12) works
+  fine via plain `GetAsyncKeyState` (see `HotkeyCaptureControl.xaml.cs`), but Win+letter/
+  number is claimed by the shell before a normal WPF app ever sees the keydown (that's
+  why it opens Start Menu/Explorer/etc. instead). We tried fixing this properly on
+  2026-09-23 with a temporary low-level keyboard hook (installed while the capture button
+  has focus, suppressing the event before the shell saw it) — it technically worked for
+  detecting the combo, but a capture that didn't produce a valid result (e.g. modifiers
+  read as empty — a real bug in that path, never fully root-caused) left the button still
+  focused, which left the hook installed, which **suppressed all keyboard input
+  system-wide, including Alt+Tab**, until the user killed the whole process. Scoped to
+  while Centertized was running (killing the process removes its hooks automatically,
+  confirmed), not a lasting OS-level issue, but still a real "your keyboard stopped
+  working" incident during testing. Reverted at the user's explicit request. If this is
+  ever revisited, it needs a hard safety net *before* shipping again — e.g. a watchdog
+  timer that force-unhooks after N seconds regardless of focus state, and it should be
+  tested far more thoroughly than "it builds and the happy path works" before touching a
+  real keyboard with it.
 - Hotkey conflict detection (`RegisterHotKey` failing with `ERROR_HOTKEY_ALREADY_REGISTERED`)
   only catches other apps that also use `RegisterHotKey`. Apps using a low-level keyboard
   hook instead are undetectable in advance — there is no Win32 API to query that.

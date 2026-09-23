@@ -31,10 +31,24 @@
   řekl ať to necháme být. Zůstává jen Win+funkční klávesa (Win+F1-F24), to funguje
   spolehlivě bez hooku. Podrobnosti a poučení pro případné budoucí pokusy v CLAUDE.md.
 
+## Vzhled/UX pass 2026-09-23 (kolo 3) — [HOTOVO]
+
+- [HOTOVO] Tray menu: ui:MenuItem/ui:SymbolIcon místo obyčejného MenuItem (lepší
+  vystředění ikon, Fluent hover styl), odstraněný zbytečný separator mezi 2 položkami.
+- [ZAMÍTNUTO/VYŘEŠENO JINAK] Plynulý scroll v Nastavení - zkusili jsme (1) řetězené
+  DoubleAnimation na cíl kolečka, (2) totéž s navazováním na cíl rozjeté animace
+  (PendingTarget) - trochu choppy, ale použitelné, (3) fyziku (rychlost+tření přes
+  CompositionTarget.Rendering) - po doladění pořád necítilo přirozeně jako WinUI
+  momentum scroll. Skončili jsme u varianty (2) - nejlepší kompromis, co šel v
+  rozumném čase doladit. Skutečné WinUI-style momentum scrollování by zřejmě
+  vyžadovalo výrazně větší investici (sledování skutečné rychlosti gesta v čase,
+  ne jen počet/velikost wheel událostí).
+
 ## Otevřené položky
 
 - Tray context menu pořád nevypadá úplně nativně (chybí třeba zaoblený hover jako u
-  Flow Launcheru) - ikonky přidané, zbytek je defaultní ControlsDictionary styl.
+  Flow Launcheru) - ikonky a ui:MenuItem přidané, zbytek je defaultní ControlsDictionary
+  styl.
 - První spuštění appky by mohlo ukázat tray "balloon", ať uživatel objeví ikonu.
 - Elevated (admin) okna - chování zdokumentované, ale živě neověřené (tenhle stroj má
   vypnuté UAC).

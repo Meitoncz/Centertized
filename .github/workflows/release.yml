@@ -1,0 +1,59 @@
+name: Release
+
+# Vydání: git tag v1.2.3 && git push --tags
+# Workflow sestaví appku, vyrobí instalátor + balíčky pro automatické aktualizace (Velopack) a
+# vše nahraje jako GitHub Release. Appka si aktualizace stahuje právě odtud.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write  # vytvoření GitHub Release a nahrání souborů
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Determine version from tag
+        id: version
+        shell: pwsh
+        run: |
+          # v1.2.3 -> 1.2.3 (tag je jediný zdroj pravdy o verzi vydání)
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          "value=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Test
+        run: dotnet test src/Centertized.Tests --configuration Release
+
+      - name: Publish (self-contained)
+        run: >
+          dotnet publish src/Centertized --configuration Release --runtime win-x64 --self-contained
+          -p:Version=${{ steps.version.outputs.value }} --output publish
+
+      - name: Install Velopack CLI
+        run: dotnet tool install --global vpk
+
+      - name: Download previous release (for delta updates)
+        shell: pwsh
+        continue-on-error: true  # první vydání žádné předchozí nemá
+        run: vpk download github --repoUrl "${{ github.server_url }}/${{ github.repository }}" --token "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Pack installer and update packages
+        run: >
+          vpk pack --packId Centertized --packVersion ${{ steps.version.outputs.value }}
+          --packDir publish --mainExe Centertized.exe --packTitle Centertized --packAuthors Meitoncz
+          --icon src/Centertized/Resources/icon.ico --outputDir releases
+
+      - name: Upload to GitHub Release
+        run: >
+          vpk upload github --repoUrl "${{ github.server_url }}/${{ github.repository }}"
+          --outputDir releases --publish --releaseName "Centertized ${{ steps.version.outputs.value }}"
+          --tag "${{ github.ref_name }}" --token "${{ secrets.GITHUB_TOKEN }}"

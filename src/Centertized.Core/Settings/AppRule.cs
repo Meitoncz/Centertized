@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Centertized.Core.Settings;
 
 /// <summary>
@@ -19,8 +21,10 @@ public sealed class AppRule
 
     public int? RememberedHeight { get; set; }
 
+    [JsonIgnore]
     public bool HasRememberedSize => RememberedWidth is > 0 && RememberedHeight is > 0;
 
     /// <summary>Pravidlo, které nic nenastavuje, nemá smysl držet v nastavení.</summary>
+    [JsonIgnore]
     public bool IsEmpty => !ExcludedFromAutoCenter && !HasRememberedSize;
 }

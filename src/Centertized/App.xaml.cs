@@ -55,6 +55,11 @@ public partial class App : Application
 
     public static WindowSizeLearner SizeLearner { get; private set; } = null!;
 
+    public static UpdateService Updates { get; } = new();
+
+    public static void LogUpdateFailure(Exception exception) =>
+        Log.Warning(exception, "Kontrola/stažení aktualizace selhalo.");
+
     private AboutWindow? _aboutWindow;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -102,6 +107,13 @@ public partial class App : Application
 
         // Jen pro ruční/skriptované ověření vzhledu menu - v tray se pravým klikem
         // nedá nasnímat ze skriptu, tak se menu otevře na pevných souřadnicích.
+        _ = CheckForUpdatesOnStartupAsync(startupSettings.CheckForUpdatesAutomatically);
+
+        if (e.Args.Contains("--show-about"))
+        {
+            ShowAboutWindow();
+        }
+
         if (e.Args.Contains("--show-picker"))
         {
             new InstalledAppsWindow().Show();
@@ -240,6 +252,32 @@ public partial class App : Application
 
     // Nativní Win32 menu (viz NativeTrayMenu) místo WPF ContextMenu.
     private void TrayIcon_RightClick(object sender, RoutedEventArgs e) => ShowTrayMenu();
+
+    // Tichá kontrola po startu (jen v nainstalované appce). Když je nová verze, oznámí se balonkem;
+    // stažení a restart si uživatel spustí sám v Nastavení, nic se neinstaluje bez jeho vědomí.
+    private async Task CheckForUpdatesOnStartupAsync(bool enabled)
+    {
+        if (!enabled || !Updates.IsInstalled)
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(20));
+            if (await Updates.CheckAsync())
+            {
+                await Dispatcher.InvokeAsync(() => _trayIcon?.ShowNotification(
+                    "Centertized",
+                    Loc.Format("Notice.UpdateAvailable", Updates.PendingVersion ?? ""),
+                    H.NotifyIcon.Core.NotificationIcon.Info));
+            }
+        }
+        catch (Exception ex)
+        {
+            LogUpdateFailure(ex);
+        }
+    }
 
     private void ShowTrayMenu((int X, int Y)? forcedPosition = null)
     {

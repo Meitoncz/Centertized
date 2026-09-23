@@ -46,9 +46,11 @@ public partial class SettingsWindow : FluentWindow
         LanguageCombo.SelectedIndex = (int)settings.Language;
         AutoCenterNewWindowsToggle.IsChecked = settings.AutoCenterNewWindows;
         RememberSizesToggle.IsChecked = settings.RememberWindowSizes;
+        AutoUpdateToggle.IsChecked = settings.CheckForUpdatesAutomatically;
         _isInitializing = false;
 
         RefreshLocalizedContent();
+        RefreshUpdateUi();
 
         App.AppRules.Changed += OnAppRulesChanged;
         Loc.LanguageChanged += OnLanguageChanged;
@@ -91,7 +93,11 @@ public partial class SettingsWindow : FluentWindow
         }
     }
 
-    private void OnLanguageChanged() => Dispatcher.BeginInvoke(RefreshLocalizedContent);
+    private void OnLanguageChanged() => Dispatcher.BeginInvoke(() =>
+    {
+        RefreshLocalizedContent();
+        RefreshUpdateUi();
+    });
 
     private void ThemeModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -199,6 +205,74 @@ public partial class SettingsWindow : FluentWindow
     }
 
     private void ForgetAllSizesButton_Click(object sender, RoutedEventArgs e) => App.AppRules.ClearAllRememberedSizes();
+
+    private void AutoUpdateToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_isInitializing)
+        {
+            return;
+        }
+
+        var settings = App.SettingsStore.Load();
+        settings.CheckForUpdatesAutomatically = AutoUpdateToggle.IsChecked == true;
+        App.SettingsStore.Save(settings);
+    }
+
+    // Stav aktualizací: po kontrole se z tlačítka "Zkontrolovat" stane "Stáhnout a restartovat".
+    private void RefreshUpdateUi()
+    {
+        if (!App.Updates.IsInstalled)
+        {
+            UpdateStatusText.Text = Loc.Get("Update.NotInstalled");
+            UpdateButton.IsEnabled = false;
+            return;
+        }
+
+        UpdateButton.IsEnabled = true;
+        if (App.Updates.PendingVersion is { } version)
+        {
+            UpdateStatusText.Text = Loc.Format("Update.Available", version);
+            UpdateButton.Content = Loc.Get("Update.Download");
+        }
+        else
+        {
+            UpdateStatusText.Text = AppInfo.Version is var current ? Loc.Format("About.Version", current) : "";
+            UpdateButton.Content = Loc.Get("Update.Check");
+        }
+    }
+
+    private async void UpdateButton_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateButton.IsEnabled = false;
+        try
+        {
+            if (App.Updates.PendingVersion is not null)
+            {
+                UpdateStatusText.Text = Loc.Get("Update.Downloading");
+                await App.Updates.DownloadAndRestartAsync(percent => Dispatcher.BeginInvoke(() =>
+                    UpdateStatusText.Text = $"{Loc.Get("Update.Downloading")} {percent} %"));
+                return; // po úspěchu se appka sama restartuje
+            }
+
+            UpdateStatusText.Text = Loc.Get("Update.Checking");
+            var available = await App.Updates.CheckAsync();
+            if (!available)
+            {
+                UpdateStatusText.Text = Loc.Get("Update.UpToDate");
+                UpdateButton.Content = Loc.Get("Update.Check");
+                UpdateButton.IsEnabled = true;
+                return;
+            }
+
+            RefreshUpdateUi();
+        }
+        catch (Exception ex)
+        {
+            App.LogUpdateFailure(ex);
+            UpdateStatusText.Text = Loc.Get("Update.Failed");
+            UpdateButton.IsEnabled = true;
+        }
+    }
 
     private void OnCaptureControlLoaded(object sender, RoutedEventArgs e)
     {

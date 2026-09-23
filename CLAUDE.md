@@ -9,8 +9,11 @@ monitor. Built to be extended with more window-management features over time.
 - All conversational replies to the user: **Czech**.
 - All comments inside the application source code: **Czech**.
 - All user-facing app UI strings (menu items, window/page titles, button labels,
-  in-app messages): **English** for now — Czech localization may be added later as an
-  explicit feature, not by default. Don't translate UI strings to Czech unless asked.
+  in-app messages): **localized through resource dictionaries** (`Resources/Strings.en.xaml`
+  is the base/fallback, `Strings.cs.xaml` overlays it; `Services/Loc.cs`). Never hard-code
+  UI text: add the key to BOTH dictionaries, use `{DynamicResource Key}` in XAML and
+  `Loc.Get/Format` in code (updated 2026-09-23 when Czech localization shipped). Log
+  messages and code comments stay Czech.
 - This file (CLAUDE.md) and any other Claude-internal notes: English is fine.
 
 ## Stack
@@ -128,7 +131,8 @@ Key non-obvious technical constraints — these are by design, don't try to "fix
 
 ## Known issues
 
-- Tray context menu (`App.xaml`'s `ContextMenu`/`MenuItem` on the `TaskbarIcon`) renders
+- ~~Tray context menu renders wrong~~ **RESOLVED 2026-09-23** (native Win32 popup menu, see the
+  last session entry). Original note kept for history: the tray context menu rendered
   with plain default Windows styling (white) even in dark mode — WPF-UI doesn't seem to
   theme it automatically the way it themes windows/pages. Likely fix: either explicit
   WPF-UI-aware styling on the menu, or switch the tray icon to the `WPF-UI.Tray` package
@@ -473,4 +477,91 @@ detection wait before re-centering a reopened UWP window) cut from 150ms to 60ms
 wait was the largest single contributor to the visible jump on reopen. Measurement
 caveat: PowerShell polling has ~50ms resolution, so sub-100ms differences can't be
 measured from scripts; judge by eye.
+
+## Session 2026-09-23 (evening): per-app rules, localization, native tray menu, installer
+
+Big batch driven by the user's feature list. Read this before touching any of it.
+
+**Per-app rules (`AppRulesService`, `AppRule`)** - one settings dictionary keyed by the app's
+exe name lowercase (`AppIdentity.Key`). For UWP windows the identity comes from the
+`Windows.UI.Core.CoreWindow` child's process, NOT from `ApplicationFrameHost.exe` (which hosts
+every UWP window) - `Win32WindowService.GetAppIdentity` does this and returns null for a
+frame with no CoreWindow yet (the watcher then centers as usual and re-checks exclusion at
+its next tracking step). A rule holds `ExcludedFromAutoCenter` (+ `AccentColor`) and the
+remembered size. Sizes are stored in **96-DPI units** and scaled by the window's DPI when
+applied. The service caches in memory (it is read from watcher threads) and writes through
+Load -> change -> Save so it never clobbers other settings.
+
+**Remembered sizes are learned automatically, not by shortcut** (`WindowSizeLearner`,
+`EVENT_SYSTEM_MOVESIZEEND`). An earlier iteration had "remember size" / "restore size" hotkeys
+and a per-app toggle hotkey - the user rejected that design: *a global toggle, learned by
+itself*, and exceptions chosen from an app list. Those three `IWindowAction`s are deleted. The
+learner skips non-resizable, minimized and maximized windows, windows smaller than 240x160, and
+Aero-Snapped or full-work-area sizes (`LooksSnappedOrFullscreen`, unit-tested) so a snap never
+becomes an app's "normal" size. Sizes are applied only by the auto-center watcher (through
+`IWindowSizePolicy` / `RememberedSizePolicy`, using `WindowCenteringCalculator.CalculateResized`
+so size and position go in a single `SetWindowPos`); the centering hotkey stays pure centering.
+Verified end to end with a real mouse drag of a Notepad corner (`mouse_event`): it learned
+1200x880 (96-dpi units), and the next Notepad opened at 1500x1100 px, centered.
+
+**Exceptions UI** - "Choose apps..." opens `InstalledAppsWindow`: Win32 apps from Start-menu
+shortcuts (`WScript.Shell` COM, uninstallers filtered), installed UWP apps
+(`Windows.Management.Deployment.PackageManager.FindPackagesForUser("")` - works without
+elevation; the exe is read from `AppxManifest.xml`, only packages with an `AppListEntry`), plus
+apps that currently have a window. UWP support required the UI project TFM
+`net10.0-windows10.0.19041.0` (Core stays `net10.0-windows`). Checked = excluded; on Done the
+whole list is applied at once (`SetExcludedApps`); excluded apps that are no longer
+installed are re-added as checked so confirming can't silently drop them. Each exclusion row
+has a dot colored by `AccentColorExtractor` (hue buckets weighted by saturation x brightness,
+not a plain average - averaging gives muddy grey; grey icons get mid-grey; too-dark colors are
+lightened). UWP icons come from `AppListEntry.DisplayInfo.GetLogo`. Verified by driving the
+picker with UI Automation (checked 4 apps, pressed Done): the stored colors matched the icons.
+
+**Localization** - see the language convention at the top. `Loc.Apply` keeps the English
+dictionary always merged and overlays Czech, so a missing key falls back to English; the
+language switches live (`SettingsWindow` rebuilds its data-driven lists on
+`Loc.LanguageChanged`). `AppSettings.Language` defaults to `System` (Czech Windows -> Czech UI,
+otherwise English). Known leftover: Warning-level *log* messages still reach the user as tray
+balloons through `TrayNotificationSink` in Czech (would need message keys).
+
+**Tray menu - the long way round, do not repeat it.** Attempt 1: WPF `ContextMenu` with
+`ui:MenuItem` (blurry text because it is a transparent layered window, so no ClearType; a white
+focus rectangle on the first item; and light-themed at startup because the theme was only
+applied when the Settings window was created - `ThemeService.Apply` now runs at startup and
+follows `SystemEvents.UserPreferenceChanged`). Attempt 2: a custom `FluentWindow` popup - the
+user rejected it too ("why custom, can't you use the default one?"). **Final, correct
+answer: the real Win32 popup menu** (`NativeTrayMenu`: `CreatePopupMenu` + `InsertMenuItem` +
+`TrackPopupMenuEx` with `TPM_RETURNCMD`), which on Windows 11 is natively rounded, crisp and
+has native hover. Dark mode via the undocumented uxtheme ordinals `#135 SetPreferredAppMode`
+(2 = ForceDark, 3 = ForceLight) and `#136 FlushMenuThemes` (wrapped in try/catch; worst case a
+light menu). Item icons are Segoe Fluent Icons glyphs rendered to premultiplied 32-bit DIB
+bitmaps (`hbmpItem`) in the text color. The menu must be shown after `SetForegroundWindow`
+on an owner window and followed by `WM_NULL`, or it will not dismiss on an outside click.
+Items: Open Centertized / About / Close. Test switches: `--show-tray-menu` opens the menu at
+startup, `--show-picker` opens the app picker, `--settings` forces the Settings window.
+
+**About window** (`AboutWindow`, opened from the tray) is modeled on the user's EtherWave app:
+icon, name, version, description, license, GitHub link.
+
+**Installer + updates (Velopack)** - `Program.cs` is the entry point (`StartupObject`) and runs
+`VelopackApp.Build().Run()` before WPF starts. `UpdateService` uses `GithubSource` on
+`AppInfo.RepositoryUrl` (this works because the repo is public - a private repo would need a
+token baked into the app, which is a no-go). The update UI is in Settings -> About; the startup
+check (`AppSettings.CheckForUpdatesAutomatically`) only notifies, and download + restart is always
+the user's click. `IsInstalled` is false in dev/portable runs, so the UI then says updates need
+the installed version. `vpk pack` was verified locally (Setup.exe 85 MB, portable zip, full
+nupkg from a self-contained `win-x64` publish), but the installer and the real update flow
+were NOT run on the dev machine (it would install into the user's profile) - the first real
+test is the first tagged release. The git tag is the single source of truth for the version
+(`-p:Version=` in `release.yml`); the csproj `<Version>` is only the local default.
+`.github/workflows/ci.yml` builds and tests on push/PR; `release.yml` (tag `v*`) publishes,
+packs with vpk and creates the GitHub Release. **GPLv3** (same as EtherWave) was chosen for
+`LICENSE` and the About text - the user should confirm.
+
+Test scripts from this session live only in the session scratchpad (not in the repo): real
+mouse-drag resize, UI Automation driving of the picker, screenshots of the native menu via
+`CopyFromScreen` after finding its window by class `#32768`. PowerShell 5.1 gotchas: `$pid`
+is read-only, BOM-less scripts with diacritics are read as ANSI, `$using:` does not work in
+`EnumWindows` callbacks. Shell gotcha: a Bash call whose heredoc text contains certain quote
+patterns can fail to parse as a whole (nothing runs) - write files with the Write tool instead.
 

@@ -176,6 +176,31 @@
                 </ItemsControl>
 
                 <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.About}" />
+                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon ArrowSync24}">
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <ui:TextBlock FontTypography="Body" Text="{DynamicResource Update.Title}" />
+                            <ui:TextBlock x:Name="UpdateStatusText"
+                                          Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                          TextWrapping="Wrap" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <Button x:Name="UpdateButton" Content="{DynamicResource Update.Check}"
+                            Click="UpdateButton_Click" />
+                </ui:CardControl>
+                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon CloudArrowDown24}">
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <ui:TextBlock FontTypography="Body" Text="{DynamicResource Update.Automatic}" />
+                            <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                          Text="{DynamicResource Update.Automatic.Description}"
+                                          TextWrapping="Wrap" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch x:Name="AutoUpdateToggle"
+                                     Checked="AutoUpdateToggle_Toggled"
+                                     Unchecked="AutoUpdateToggle_Toggled" />
+                </ui:CardControl>
                 <ui:CardExpander Icon="{ui:SymbolIcon Info24}">
                     <ui:CardExpander.Header>
                         <StackPanel>

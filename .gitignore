@@ -20,3 +20,6 @@ coverage*.info
 
 ## Logs appky (běhový výstup, ne zdrojový kód)
 *.log
+publish/
+releases/
+*.nupkg

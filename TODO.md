@@ -44,10 +44,18 @@
   vyžadovalo výrazně větší investici (sledování skutečné rychlosti gesta v čase,
   ne jen počet/velikost wheel událostí).
 
+## Večer 2026-09-23 - [HOTOVO]
+
+- [HOTOVO] Pravidla podle aplikace: automaticky se pamatuje velikost oken (globální přepínač) a výběr výjimek z auto-centrování (okno Vybrat aplikace, seznam v hlavním okně s puntíkem v barvě ikony).
+- [HOTOVO] Nativní tray menu (Open Centertized / About / Close) - skutečné Win32 popup menu.
+- [HOTOVO] Česká lokalizace (EN/CS, živé přepínání).
+- [HOTOVO] About okno, README, LICENSE (GPLv3 - potvrdit), GitHub Actions (CI + release).
+- [HOTOVO] Instalátor a aktualizace (Velopack) - sestavení ověřeno lokálně.
+
 ## Otevřené položky
 
-- Tray context menu pořád nevypadá úplně nativně (chybí třeba zaoblený hover jako u
-  Flow Launcheru) - ikonky a ui:MenuItem přidané, zbytek je defaultní ControlsDictionary
-  styl.
-- Elevated (admin) okna - chování zdokumentované, ale živě neověřené (tenhle stroj má
-  vypnuté UAC).
+- Poprvé skutečně otestovat instalátor a aktualizaci: tag `v1.0.0` (repo musí být public), nainstalovat, pak vydat `v1.0.1` a ověřit aktualizaci z Nastavení.
+- Zvážit podepsání instalátoru (SmartScreen varování).
+- Balonky s varováními z logu jsou česky (TrayNotificationSink) - chtělo by klíče zpráv.
+- Elevated (admin) okna - chování zdokumentované, ale živě neověřené (tenhle stroj má vypnuté UAC).
+- Nápady na později (zatím ne): další zkratky pro správu oken, výběr monitoru pro nová okna.

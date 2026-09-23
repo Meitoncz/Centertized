@@ -26,10 +26,17 @@ public static class SmoothScrollBehavior
     public static bool GetEnable(DependencyObject element) => (bool)element.GetValue(EnableProperty);
 
     // Kolik pixelů/snímek rychlosti přidá jeden "cvak" kolečka (Delta bývá +-120).
-    private const double PixelsPerNotch = 90;
+    // Celková ujetá dráha jednoho cvaku je geometrická řada = PixelsPerNotch / (1 - Friction) -
+    // s původním 90/0.82 to vycházelo na ~500px na jeden cvak (odtud ten "skok skoro
+    // až dolů"), tohle dává rozumnějších ~85px.
+    private const double PixelsPerNotch = 13;
 
     // Kolik rychlosti zůstane každý snímek (0-1) - nižší = rychlejší doznění.
-    private const double Friction = 0.82;
+    private const double Friction = 0.85;
+
+    // Pojistný strop rychlosti (px/snímek) - i kdyby myš/touchpad poslaly hodně
+    // wheel událostí naráz (vysoké rozlišení kolečka apod.), scroll nikdy nevystřelí.
+    private const double MaxVelocity = 45;
 
     // Pod touhle rychlostí (px/snímek) se animace zastaví úplně, ať to nedoznívá donekonečna.
     private const double StopThreshold = 0.05;
@@ -57,7 +64,7 @@ public static class SmoothScrollBehavior
         void OnWheel(object sender, MouseWheelEventArgs args)
         {
             args.Handled = true;
-            velocity -= args.Delta / 120.0 * PixelsPerNotch;
+            velocity = Math.Clamp(velocity - args.Delta / 120.0 * PixelsPerNotch, -MaxVelocity, MaxVelocity);
 
             renderingHandler ??= OnRendering;
             CompositionTarget.Rendering -= renderingHandler; // ať se nepřihlásí dvakrát

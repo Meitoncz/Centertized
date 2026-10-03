@@ -115,6 +115,19 @@
                                          Unchecked="RememberSizesToggle_Toggled" />
                     </StackPanel>
                 </ui:CardControl>
+                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon ShieldKeyhole24}">
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <ui:TextBlock FontTypography="Body" Text="{DynamicResource General.RunAsAdmin}" />
+                            <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                          Text="{DynamicResource General.RunAsAdmin.Description}"
+                                          TextWrapping="Wrap" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch x:Name="RunAsAdminToggle"
+                                     Checked="RunAsAdminToggle_Toggled"
+                                     Unchecked="RunAsAdminToggle_Toggled" />
+                </ui:CardControl>
                 <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon WeatherSunny24}">
                     <ui:CardControl.Header>
                         <StackPanel>

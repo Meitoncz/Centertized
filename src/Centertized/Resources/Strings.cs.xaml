@@ -73,4 +73,7 @@
     <sys:String x:Key="Picker.Search">Hledat aplikace</sys:String>
     <sys:String x:Key="Picker.Done">Hotovo</sys:String>
     <sys:String x:Key="Picker.Cancel">Zrušit</sys:String>
+
+    <sys:String x:Key="General.RunAsAdmin">Spustit jako administrátor</sys:String>
+    <sys:String x:Key="General.RunAsAdmin.Description">Umožní Centertized přesouvat okna aplikací spuštěných jako administrátor. Windows požádá o potvrzení (UAC) a Centertized se restartuje.</sys:String>
 </ResourceDictionary>

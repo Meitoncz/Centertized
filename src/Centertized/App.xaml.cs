@@ -66,7 +66,33 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        _singleInstanceMutex = new Mutex(initiallyOwned: true, name: SingleInstanceMutexName, createdNew: out var createdNew);
+        // Po přepnutí admin režimu appka spouští novou instanci a stará se ještě chvíli zavírá -
+        // taková instance (--relaunch) si na uvolnění zámku počká, jiná by hned skončila.
+        var relaunching = e.Args.Contains(ElevationService.RelaunchArgument);
+        var createdNew = false;
+        try
+        {
+            _singleInstanceMutex = new Mutex(initiallyOwned: true, name: SingleInstanceMutexName, createdNew: out createdNew);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Zámek vlastní instance se zvýšenými právy a ten neprivilegovaný proces otevřít nesmí -
+            // je to tedy stejně "už běží jiná instance".
+            _singleInstanceMutex = null;
+        }
+
+        if (!createdNew && relaunching && _singleInstanceMutex is not null)
+        {
+            try
+            {
+                createdNew = _singleInstanceMutex.WaitOne(TimeSpan.FromSeconds(10));
+            }
+            catch (AbandonedMutexException)
+            {
+                createdNew = true; // předchozí instanci někdo "zabil", zámek je ale volný
+            }
+        }
+
         _ownsSingleInstanceMutex = createdNew;
         if (!createdNew)
         {
@@ -78,6 +104,22 @@ public partial class App : Application
 
         SettingsStore = new JsonSettingsStore();
         var startupSettings = SettingsStore.Load();
+
+        // Admin režim zapnutý, ale appka běží bez zvýšených práv (např. spuštěná ručně) - přepnout se
+        // do zvýšené instance. Když uživatel UAC odmítne, běží se dál bez ní.
+        if (startupSettings.RunAsAdministrator && !ElevationService.IsElevated && ElevationService.RelaunchElevated())
+        {
+            ReleaseSingleInstanceMutex();
+            Shutdown();
+            return;
+        }
+
+        // Spouštění s Windows u zvýšené appky jde přes úlohu plánovače (Run klíč by UAC ukázal při
+        // každém přihlášení) - při startu se případně převede.
+        if (ElevationService.IsElevated && startupSettings.RunAsAdministrator)
+        {
+            new AutostartService().Migrate(useElevatedTask: true);
+        }
         RememberWindowSizes = startupSettings.RememberWindowSizes;
         Loc.Apply(startupSettings.Language);
         ThemeService.Apply(startupSettings.ThemeMode);
@@ -346,6 +388,37 @@ public partial class App : Application
             "Centertized",
             Loc.Get("Tray.StillRunning"),
             H.NotifyIcon.Core.NotificationIcon.Info);
+    }
+
+    /// <summary>Ukončí appku a spustí novou se zvýšenými právy / bez nich (viz nastavení "Spustit jako administrátor").</summary>
+    public static bool RestartAs(bool elevated)
+    {
+        var app = (App)Current;
+        if (elevated)
+        {
+            if (!ElevationService.RelaunchElevated())
+            {
+                return false;
+            }
+        }
+        else
+        {
+            ElevationService.RelaunchNotElevated();
+        }
+
+        app.ReleaseSingleInstanceMutex();
+        app.ExitApplication();
+        return true;
+    }
+
+    // Nová instance musí zámek dostat hned, ne až po dokončení OnExit.
+    private void ReleaseSingleInstanceMutex()
+    {
+        if (_ownsSingleInstanceMutex)
+        {
+            _singleInstanceMutex?.ReleaseMutex();
+            _ownsSingleInstanceMutex = false;
+        }
     }
 
     private void ExitApplication()

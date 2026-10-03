@@ -88,9 +88,9 @@ Key non-obvious technical constraints — these are by design, don't try to "fix
   only catches other apps that also use `RegisterHotKey`. Apps using a low-level keyboard
   hook instead are undetectable in advance — there is no Win32 API to query that.
 - A window running elevated (as administrator) cannot be moved by this app while the app
-  itself runs non-elevated — that's UIPI, an OS security boundary. v1 runs non-elevated
-  by design (avoids UAC friction); an elevated opt-in mode is a possible future feature,
-  not a bug to silently work around.
+  itself runs non-elevated — that's UIPI, an OS security boundary. The app runs non-elevated
+  by default (avoids UAC friction); the opt-in "Run as administrator" setting (see the
+  2026-10-03 entry) is the supported way around it, not a hack to add elsewhere.
 - Centering must read the window's bounds via
   `DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, ...)`, not `GetWindowRect` —
   the latter includes invisible resize-border padding, so naive centering looks visibly
@@ -564,4 +564,34 @@ mouse-drag resize, UI Automation driving of the picker, screenshots of the nativ
 is read-only, BOM-less scripts with diacritics are read as ANSI, `$using:` does not work in
 `EnumWindows` callbacks. Shell gotcha: a Bash call whose heredoc text contains certain quote
 patterns can fail to parse as a whole (nothing runs) - write files with the Write tool instead.
+
+## Session 2026-10-03: "Run as administrator" mode
+
+Trigger: the user's RHI app (WinUI 3, runs elevated) never centered. Diagnosed from the log
+(`SetWindowPos ... selhal (pravděpodobně běží se zvýšenými právy)` for RHI's hwnd) and
+`OpenProcess` -> access denied on RHI.exe: UIPI, exactly the documented limitation.
+
+Implementation: `AppSettings.RunAsAdministrator` + a toggle in General. `ElevationService`:
+`IsElevated`, `RelaunchElevated()` (`runas` verb; returns false when the user declines UAC,
+Win32 error 1223), `RelaunchNotElevated()` (a plain Process.Start from an elevated process
+inherits elevation, so it goes through a delayed `cmd /c ping ... & explorer.exe "<exe>"`,
+because explorer can't pass arguments and the old instance must release the mutex/hotkeys
+first). Startup: if the setting is on and the process isn't elevated it relaunches elevated;
+declined UAC just keeps running normally. The single-instance mutex is `Global\`: an elevated
+instance's mutex can't be opened by a non-elevated process (UnauthorizedAccessException ->
+treated as "already running"), and a `--relaunch` instance waits up to 10 s for the old one
+to release it. `App.RestartAs(elevated)` returns false if UAC was declined (the toggle and
+setting are then reverted) — a first version returned void and the handler reverted the
+setting even on success; don't reintroduce that.
+Autostart (`AutostartService`): in admin mode a Run key would start non-elevated and trigger a
+UAC prompt every logon, so it uses a scheduled task (`schtasks /Create ... /SC ONLOGON /RL HIGHEST`)
+that only an elevated instance can create/delete; elevated startup migrates Run key -> task,
+turning admin mode off removes the task before relaunching.
+
+Testing gotchas (they cost time): a **non-elevated** script can neither kill the elevated
+Centertized nor build over it (the exe stays locked) — the user has to close it from the tray;
+and synthetic input (`keybd_event`) from a non-elevated script is dropped when the foreground
+window is elevated (UIPI), so hotkeys on elevated windows must be pressed by hand. Verified
+by the user: Ctrl+Shift+C now centers RHI. Not yet verified: disabling the mode (relaunch
+non-elevated) and the scheduled-task autostart at a real logon.
 

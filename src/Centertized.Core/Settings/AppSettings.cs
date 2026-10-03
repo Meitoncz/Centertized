@@ -19,6 +19,12 @@ public sealed class AppSettings
 
     public AppLanguage Language { get; set; } = AppLanguage.System;
 
+    /// <summary>
+    /// Appka běží se zvýšenými právy (UAC), aby mohla přesouvat i okna aplikací spuštěných jako
+    /// administrátor (Windows to neprivilegovanému procesu zakazuje - UIPI).
+    /// </summary>
+    public bool RunAsAdministrator { get; set; }
+
     /// <summary>Po startu appky zkontrolovat, jestli je dostupná nová verze (jen v nainstalované appce).</summary>
     public bool CheckForUpdatesAutomatically { get; set; } = true;
 

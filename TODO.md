@@ -57,5 +57,5 @@
 - Poprvé skutečně otestovat instalátor a aktualizaci: tag `v1.0.0` (repo musí být public), nainstalovat, pak vydat `v1.0.1` a ověřit aktualizaci z Nastavení.
 - Zvážit podepsání instalátoru (SmartScreen varování).
 - Balonky s varováními z logu jsou česky (TrayNotificationSink) - chtělo by klíče zpráv.
-- Elevated (admin) okna - chování zdokumentované, ale živě neověřené (tenhle stroj má vypnuté UAC).
+- Admin režim (Spustit jako administrátor) je hotový a ověřený na RHI; neověřeno: vypnutí režimu a autostart přes úlohu plánovače po skutečném přihlášení.
 - Nápady na později (zatím ne): další zkratky pro správu oken, výběr monitoru pro nová okna.

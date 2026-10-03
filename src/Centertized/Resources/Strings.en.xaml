@@ -73,4 +73,7 @@
     <sys:String x:Key="Picker.Search">Search apps</sys:String>
     <sys:String x:Key="Picker.Done">Done</sys:String>
     <sys:String x:Key="Picker.Cancel">Cancel</sys:String>
+
+    <sys:String x:Key="General.RunAsAdmin">Run as administrator</sys:String>
+    <sys:String x:Key="General.RunAsAdmin.Description">Lets Centertized move windows of apps that run as administrator. Windows asks for confirmation (UAC) and Centertized restarts.</sys:String>
 </ResourceDictionary>

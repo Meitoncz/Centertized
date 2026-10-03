@@ -46,6 +46,8 @@ public partial class SettingsWindow : FluentWindow
         LanguageCombo.SelectedIndex = (int)settings.Language;
         AutoCenterNewWindowsToggle.IsChecked = settings.AutoCenterNewWindows;
         RememberSizesToggle.IsChecked = settings.RememberWindowSizes;
+        // Přepínač ukazuje skutečný stav: zapnuto = appka teď opravdu běží se zvýšenými právy.
+        RunAsAdminToggle.IsChecked = settings.RunAsAdministrator && ElevationService.IsElevated;
         AutoUpdateToggle.IsChecked = settings.CheckForUpdatesAutomatically;
         _isInitializing = false;
 
@@ -144,7 +146,46 @@ public partial class SettingsWindow : FluentWindow
             return;
         }
 
-        _autostartService.SetEnabled(StartWithWindowsToggle.IsChecked == true);
+        _autostartService.SetEnabled(StartWithWindowsToggle.IsChecked == true, useElevatedTask: ElevationService.IsElevated);
+    }
+
+    private void RunAsAdminToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_isInitializing)
+        {
+            return;
+        }
+
+        var enable = RunAsAdminToggle.IsChecked == true;
+        if (enable == ElevationService.IsElevated)
+        {
+            return; // stav už odpovídá (např. po restartu)
+        }
+
+        var settings = App.SettingsStore.Load();
+        settings.RunAsAdministrator = enable;
+        App.SettingsStore.Save(settings);
+
+        if (!enable)
+        {
+            // Úloha plánovače jde zrušit jen ze zvýšené instance - tady, dokud ještě běží.
+            _autostartService.Migrate(useElevatedTask: false);
+        }
+
+        if (App.RestartAs(elevated: enable))
+        {
+            return;
+        }
+
+        // Uživatel UAC odmítl - vrátit přepínač i nastavení.
+        if (enable)
+        {
+            settings.RunAsAdministrator = false;
+            App.SettingsStore.Save(settings);
+            _isInitializing = true;
+            RunAsAdminToggle.IsChecked = false;
+            _isInitializing = false;
+        }
     }
 
     private void StartMinimizedToggle_Toggled(object sender, RoutedEventArgs e)

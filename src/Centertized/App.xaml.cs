@@ -22,7 +22,7 @@ namespace Centertized;
 /// </summary>
 public partial class App : Application
 {
-    // Pevně dané GUID – slouží jen k odlišení naší appky v systému, nikdy neměnit.
+    // Fixed GUID - only distinguishes our app on the system, never change it.
     private const string SingleInstanceMutexName = "Global\\Centertized-9F1B1C2E-6C3B-4B7E-9A0E-9D6E9E7B2B10";
     private const int WM_HOTKEY = 0x0312;
 
@@ -34,9 +34,9 @@ public partial class App : Application
     private ILogger _logger = null!;
 
     /// <summary>
-    /// Bez DI kontejneru – appka je malá, takže sdílené instance (registry,
-    /// settings store, katalog akcí) jsou prostě statické, dostupné odkudkoliv
-    /// v UI projektu (Views/Controls).
+    /// No DI container - the app is small, so the shared instances (registry,
+    /// settings store, action catalog) are simply static, available from anywhere
+    /// in the UI project (Views/Controls).
     /// </summary>
     public static HotkeyActionRegistry HotkeyRegistry { get; private set; } = null!;
 
@@ -50,7 +50,7 @@ public partial class App : Application
 
     public static IWin32WindowService WindowService { get; private set; } = null!;
 
-    /// <summary>Kopie AppSettings.RememberWindowSizes - čte se z vláken watcheru, proto ne přímo z disku.</summary>
+    /// <summary>Copy of AppSettings.RememberWindowSizes - read from the watcher threads, so not straight from disk.</summary>
     public static volatile bool RememberWindowSizes = true;
 
     public static WindowSizeLearner SizeLearner { get; private set; } = null!;
@@ -58,7 +58,7 @@ public partial class App : Application
     public static UpdateService Updates { get; } = new();
 
     public static void LogUpdateFailure(Exception exception) =>
-        Log.Warning(exception, "Kontrola/stažení aktualizace selhalo.");
+        Log.Warning(exception, "Checking for / downloading the update failed.");
 
     private AboutWindow? _aboutWindow;
 
@@ -66,8 +66,8 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        // Po přepnutí admin režimu appka spouští novou instanci a stará se ještě chvíli zavírá -
-        // taková instance (--relaunch) si na uvolnění zámku počká, jiná by hned skončila.
+        // After toggling admin mode the app starts a new instance while the old one is still closing -
+        // such an instance (--relaunch) waits for the lock to be released, any other would exit at once.
         var relaunching = e.Args.Contains(ElevationService.RelaunchArgument);
         var createdNew = false;
         try
@@ -76,8 +76,8 @@ public partial class App : Application
         }
         catch (UnauthorizedAccessException)
         {
-            // Zámek vlastní instance se zvýšenými právy a ten neprivilegovaný proces otevřít nesmí -
-            // je to tedy stejně "už běží jiná instance".
+            // The lock is owned by an elevated instance and a non-elevated process may not open it -
+            // so it is "another instance is already running" all the same.
             _singleInstanceMutex = null;
         }
 
@@ -89,15 +89,15 @@ public partial class App : Application
             }
             catch (AbandonedMutexException)
             {
-                createdNew = true; // předchozí instanci někdo "zabil", zámek je ale volný
+                createdNew = true; // somebody "killed" the previous instance, but the lock is free
             }
         }
 
         _ownsSingleInstanceMutex = createdNew;
         if (!createdNew)
         {
-            // Appka už jednou běží – tahle instance nemá co dělat. Mutex nikdy
-            // nezískala do vlastnictví, takže se v OnExit nesmí volat ReleaseMutex.
+            // The app is already running - this instance has nothing to do. It never took
+            // ownership of the mutex, so ReleaseMutex must not be called in OnExit.
             Shutdown();
             return;
         }
@@ -105,8 +105,8 @@ public partial class App : Application
         SettingsStore = new JsonSettingsStore();
         var startupSettings = SettingsStore.Load();
 
-        // Admin režim zapnutý, ale appka běží bez zvýšených práv (např. spuštěná ručně) - přepnout se
-        // do zvýšené instance. Když uživatel UAC odmítne, běží se dál bez ní.
+        // Admin mode is on but the app runs without elevated rights (e.g. started by hand) - switch
+        // to an elevated instance. If the user declines UAC, it just keeps running without it.
         if (startupSettings.RunAsAdministrator && !ElevationService.IsElevated && ElevationService.RelaunchElevated())
         {
             ReleaseSingleInstanceMutex();
@@ -114,8 +114,8 @@ public partial class App : Application
             return;
         }
 
-        // Spouštění s Windows u zvýšené appky jde přes úlohu plánovače (Run klíč by UAC ukázal při
-        // každém přihlášení) - při startu se případně převede.
+        // Autostart of an elevated app goes through a scheduled task (a Run key would show UAC on every
+        // logon) - converted at startup if needed.
         if (ElevationService.IsElevated && startupSettings.RunAsAdministrator)
         {
             new AutostartService().Migrate(useElevatedTask: true);
@@ -129,8 +129,8 @@ public partial class App : Application
         _trayIcon.Icon = LoadTrayIcon();
         _trayIcon.ForceCreate();
 
-        // Tray notification sink potřebuje hotovou tray ikonu, proto se Serilog
-        // konfiguruje až tady, ne úplně na začátku OnStartup.
+        // The tray notification sink needs a ready tray icon, so Serilog is configured
+        // here and not at the very beginning of OnStartup.
         ConfigureLogging();
 
         DispatcherUnhandledException += OnDispatcherUnhandledException;
@@ -138,17 +138,17 @@ public partial class App : Application
 
         InitializeHotkeys();
 
-        // Výchozí chování appky je ukázat Settings okno po startu (uživatel si
-        // "spustit minimalizované" může zapnout v Nastavení). --settings navíc
-        // vynutí zobrazení i přes StartMinimized - užitečné pro rychlé testování.
+        // By default the app shows the Settings window after start (the user can turn on
+        // "start minimized" in Settings). --settings additionally forces it to show even with
+        // StartMinimized - handy for quick testing.
         var startMinimized = SettingsStore.Load().StartMinimized;
         if (!startMinimized || e.Args.Contains("--settings"))
         {
             ShowSettingsWindow();
         }
 
-        // Jen pro ruční/skriptované ověření vzhledu menu - v tray se pravým klikem
-        // nedá nasnímat ze skriptu, tak se menu otevře na pevných souřadnicích.
+        // Only for manual/scripted checking of the menu's look - a right click on the tray
+        // can't be captured from a script, so the menu is opened at fixed coordinates.
         _ = CheckForUpdatesOnStartupAsync(startupSettings.CheckForUpdatesAutomatically);
 
         if (e.Args.Contains("--show-about"))
@@ -163,13 +163,13 @@ public partial class App : Application
 
         if (e.Args.Contains("--show-tray-menu"))
         {
-            // Nativní menu blokuje, dokud se nezavře - proto až po dokončení startu.
+            // The native menu blocks until it is closed - hence only after startup finishes.
             Dispatcher.BeginInvoke(() => ShowTrayMenu((1000, 760)), DispatcherPriority.ApplicationIdle);
         }
     }
 
-    // ExtractAssociatedIcon vrací vždy jen 32x32, což je na vyšším DPI v tray rozmazané -
-    // ICO má víc velikostí, tak si vybereme tu, kterou tray opravdu potřebuje.
+    // ExtractAssociatedIcon always returns just 32x32, which looks blurry in the tray at higher DPI -
+    // the ICO contains several sizes, so we pick the one the tray really needs.
     private static System.Drawing.Icon LoadTrayIcon()
     {
         var resource = GetResourceStream(new Uri("pack://application:,,,/Resources/icon.ico"));
@@ -197,15 +197,15 @@ public partial class App : Application
             .WriteTo.Sink(new TrayNotificationSink(_trayIcon!))
             .CreateLogger();
 
-        // dispose: false - o ukončení Log.Logger se stará explicitně OnExit (Log.CloseAndFlush).
+        // dispose: false - Log.Logger is closed explicitly by OnExit (Log.CloseAndFlush).
         _logger = new SerilogLoggerFactory(Log.Logger, dispose: false).CreateLogger("Centertized");
     }
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        _logger.LogError(e.Exception, "Neošetřená výjimka na UI vlákně.");
-        // Appka běží na pozadí bez konzole - jedna spadlá akce/stránka nemá shodit
-        // celý proces, uživatel by o tom ani nevěděl.
+        _logger.LogError(e.Exception, "Unhandled exception on the UI thread.");
+        // The app runs in the background without a console - one failed action/page shouldn't bring
+        // down the whole process, the user wouldn't even know about it.
         e.Handled = true;
     }
 
@@ -213,7 +213,7 @@ public partial class App : Application
     {
         if (e.ExceptionObject is Exception ex)
         {
-            _logger.LogCritical(ex, "Neošetřená výjimka mimo UI vlákno - appka teď spadne.");
+            _logger.LogCritical(ex, "Unhandled exception outside the UI thread - the app is about to crash.");
         }
 
         Log.CloseAndFlush();
@@ -221,8 +221,8 @@ public partial class App : Application
 
     private void InitializeHotkeys()
     {
-        // Skryté message-only okno jen pro příjem WM_HOTKEY – HWND_MESSAGE (-3) jako
-        // parent zajistí, že nemá vizuální stopu (žádné okno, žádná ikona na taskbaru).
+        // Hidden message-only window used just to receive WM_HOTKEY - HWND_MESSAGE (-3) as the
+        // parent makes it visually absent (no window, no taskbar icon).
         var parameters = new HwndSourceParameters("CentertizedHotkeySink")
         {
             Width = 0,
@@ -262,12 +262,12 @@ public partial class App : Application
         {
             if (ActionCatalog.TryGetById(actionId) is null)
             {
-                continue; // zkratka pro akci, která už v appce neexistuje (např. po update)
+                continue; // a shortcut for an action that no longer exists in the app (e.g. after an update)
             }
 
             if (!Hotkey.TryParse(hotkeyText, out var hotkey))
             {
-                _logger.LogWarning("Uložená zkratka '{HotkeyText}' pro akci '{ActionId}' se nepodařila naparsovat.", hotkeyText, actionId);
+                _logger.LogWarning("The saved shortcut '{HotkeyText}' for action '{ActionId}' could not be parsed.", hotkeyText, actionId);
                 continue;
             }
 
@@ -275,7 +275,7 @@ public partial class App : Application
             if (result.Outcome != HotkeyRegistrationOutcome.Success)
             {
                 _logger.LogWarning(
-                    "Nepodařilo se znovu zaregistrovat zkratku '{HotkeyText}' pro akci '{ActionId}': {Outcome}.",
+                    "Failed to re-register the shortcut '{HotkeyText}' for action '{ActionId}': {Outcome}.",
                     hotkeyText, actionId, result.Outcome);
             }
         }
@@ -292,11 +292,11 @@ public partial class App : Application
         return IntPtr.Zero;
     }
 
-    // Nativní Win32 menu (viz NativeTrayMenu) místo WPF ContextMenu.
+    // Native Win32 menu (see NativeTrayMenu) instead of a WPF ContextMenu.
     private void TrayIcon_RightClick(object sender, RoutedEventArgs e) => ShowTrayMenu();
 
-    // Tichá kontrola po startu (jen v nainstalované appce). Když je nová verze, oznámí se balonkem;
-    // stažení a restart si uživatel spustí sám v Nastavení, nic se neinstaluje bez jeho vědomí.
+    // Silent check after startup (installed app only). When a new version exists a balloon announces it;
+    // download and restart are always started by the user in Settings, nothing installs without their knowledge.
     private async Task CheckForUpdatesOnStartupAsync(bool enabled)
     {
         if (!enabled || !Updates.IsInstalled)
@@ -323,7 +323,7 @@ public partial class App : Application
 
     private void ShowTrayMenu((int X, int Y)? forcedPosition = null)
     {
-        // Glyphy ze Segoe Fluent Icons: OpenInNewWindow, Info, PowerButton.
+        // Glyphs from Segoe Fluent Icons: OpenInNewWindow, Info, PowerButton.
         var items = new List<NativeMenuItem>
         {
             new("", Loc.Get("Tray.Open"), ShowSettingsWindow),
@@ -348,15 +348,15 @@ public partial class App : Application
         _aboutWindow.Activate();
     }
 
-    // Běžná konvence tray appek - dvojklik levým tlačítkem otevře hlavní/Settings okno.
+    // Common tray app convention - a left double-click opens the main/Settings window.
     private void TrayIcon_DoubleClick(object sender, RoutedEventArgs e) => ShowSettingsWindow();
 
     private void ShowSettingsWindow()
     {
-        // Zavřením se okno jen schová (viz SettingsWindow.OnClosing) - živé
-        // přebarvení teď funguje (žádné NavigationView, viz SettingsWindow.xaml),
-        // takže se stejná instance dá bezpečně držet po celou dobu běhu appky a
-        // další otevření je okamžité.
+        // Closing only hides the window (see SettingsWindow.OnClosing) - live theme
+        // switching works now (no NavigationView, see SettingsWindow.xaml), so the same instance
+        // can safely be kept for the whole lifetime of the app and
+        // opening it again is instant.
         _settingsWindow ??= new SettingsWindow();
 
         if (_settingsWindow.WindowState == WindowState.Minimized)
@@ -369,8 +369,8 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Volá SettingsWindow při prvním schování okna (zavření křížkem) - v tu chvíli
-    /// appka "zmizí" a je dobré jednou upozornit, že běží dál v tray liště.
+    /// Called by SettingsWindow when the window is hidden for the first time (closed with the X) -
+    /// the app then "disappears" and it's good to tell the user once that it keeps running in the tray.
     /// </summary>
     public static void ShowTrayHintIfNeeded()
     {
@@ -390,7 +390,7 @@ public partial class App : Application
             H.NotifyIcon.Core.NotificationIcon.Info);
     }
 
-    /// <summary>Ukončí appku a spustí novou se zvýšenými právy / bez nich (viz nastavení "Spustit jako administrátor").</summary>
+    /// <summary>Quits the app and starts a new one with/without elevated rights (see the "Run as administrator" setting).</summary>
     public static bool RestartAs(bool elevated)
     {
         var app = (App)Current;
@@ -411,7 +411,7 @@ public partial class App : Application
         return true;
     }
 
-    // Nová instance musí zámek dostat hned, ne až po dokončení OnExit.
+    // The new instance must get the lock right away, not only after OnExit completes.
     private void ReleaseSingleInstanceMutex()
     {
         if (_ownsSingleInstanceMutex)
@@ -423,8 +423,8 @@ public partial class App : Application
 
     private void ExitApplication()
     {
-        // Bez tohohle by Shutdown() níž narazil na SettingsWindow.OnClosing, ten by
-        // zavření zrušil (Cancel = true) a appka by se korektně neukončila.
+        // Without this, the Shutdown() below would run into SettingsWindow.OnClosing, which would
+        // cancel the close (Cancel = true) and the app wouldn't exit properly.
         if (_settingsWindow is not null)
         {
             _settingsWindow.AllowClose = true;
@@ -435,10 +435,10 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        // Bez explicitního Dispose by po ukončení appky mohla v tray liště zůstat
-        // "duch" ikona až do prvního najetí myší na její místo.
+        // Without an explicit Dispose a "ghost" icon could stay in the tray after the app exits
+        // until the mouse first hovers over its spot.
         _trayIcon?.Dispose();
-        _hotkeyMessageSource?.Dispose(); // uvolní i všechny RegisterHotKey registrace na tomhle okně
+        _hotkeyMessageSource?.Dispose(); // also releases all RegisterHotKey registrations on this window
         NewWindowWatcher?.Dispose();
         SizeLearner?.Dispose();
         if (_ownsSingleInstanceMutex)

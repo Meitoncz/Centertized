@@ -36,9 +36,9 @@ public class HotkeyTests
 
     [Theory]
     [InlineData("")]
-    [InlineData("C")] // žádný modifikátor
-    [InlineData("Ctrl+")] // chybí klávesa
-    [InlineData("Bogus+C")] // neznámý modifikátor
+    [InlineData("C")] // no modifier
+    [InlineData("Ctrl+")] // the key is missing
+    [InlineData("Bogus+C")] // unknown modifier
     [InlineData("Ctrl+NotAKey")]
     public void TryParse_RejectsInvalidInput(string text)
     {

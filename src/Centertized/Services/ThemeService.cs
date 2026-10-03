@@ -6,15 +6,15 @@ using Wpf.Ui.Controls;
 namespace Centertized.Services;
 
 /// <summary>
-/// Aplikace motivu na celou appku (resource dictionaries). Musí běžet už při startu, ne až při
-/// vytvoření okna Nastavení - jinak má tray menu (které žije bez okna) pořád výchozí světlý
-/// vzhled, i když je Windows tmavé.
+/// Applying the theme to the whole app (resource dictionaries). It must run already at startup, not only when
+/// the Settings window is created - otherwise the tray menu (which lives without a window) keeps the default light
+/// look even when Windows is dark.
 /// </summary>
 public static class ThemeService
 {
     private static ThemePreference _preference = ThemePreference.System;
 
-    /// <summary>Jestli je právě efektivně tmavý motiv (podle volby, u "System" podle Windows).</summary>
+    /// <summary>Whether the theme is effectively dark right now (by the choice, for "System" by Windows).</summary>
     public static bool IsDark => _preference switch
     {
         ThemePreference.Dark => true,
@@ -37,8 +37,8 @@ public static class ThemeService
     }
 
     /// <summary>
-    /// SystemThemeWatcher potřebuje okno; tray-only běh ho nemá, takže systémový motiv sledujeme
-    /// přes SystemEvents. Reaguje jen v režimu "System" - natvrdo zvolený Light/Dark se nemění.
+    /// SystemThemeWatcher needs a window; the tray-only run has none, so the system theme is watched
+    /// via SystemEvents. It reacts only in "System" mode - an explicitly chosen Light/Dark doesn't change.
     /// </summary>
     public static void WatchSystemTheme()
     {

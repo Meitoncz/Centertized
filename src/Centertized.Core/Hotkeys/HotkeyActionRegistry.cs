@@ -5,13 +5,13 @@ using Microsoft.Extensions.Logging;
 namespace Centertized.Core.Hotkeys;
 
 /// <summary>
-/// Mapuje zkratka -> akce, řeší intra-app i externí kolize a stará se o
-/// RegisterHotKey/UnregisterHotKey přes <see cref="IHotkeyRegistrar"/>. Nevlastní
-/// žádné okno – handle skrytého message-only okna (viz Fáze 2 v CLAUDE.md, vzniká
-/// v UI projektu přes HwndSource) dostává hotově v konstruktoru.
+/// Maps shortcut -> action, handles intra-app and external conflicts and takes care of
+/// RegisterHotKey/UnregisterHotKey via <see cref="IHotkeyRegistrar"/>. It owns no
+/// window – it receives the handle of the hidden message-only window (see Phase 2 in CLAUDE.md, created
+/// in the UI project via HwndSource) ready-made in the constructor.
 ///
-/// Používat jen z jednoho vlákna (v appce: Dispatcher/UI vlákno, které zpracovává
-/// i WM_HOTKEY) – bez zámků, protože žádné jiné vlákno sem nemá sahat.
+/// Use from a single thread only (in the app: the Dispatcher/UI thread, which also processes
+/// WM_HOTKEY) – no locks, because no other thread should touch this.
 /// </summary>
 public sealed class HotkeyActionRegistry
 {
@@ -40,7 +40,7 @@ public sealed class HotkeyActionRegistry
     {
         if (_catalog.TryGetById(actionId) is null)
         {
-            throw new ArgumentException($"Neznámé Id akce: '{actionId}'.", nameof(actionId));
+            throw new ArgumentException($"Unknown action Id: '{actionId}'.", nameof(actionId));
         }
 
         var conflict = _bindingsByActionId.FirstOrDefault(kv => kv.Key != actionId && kv.Value.Hotkey == hotkey);
@@ -49,7 +49,7 @@ public sealed class HotkeyActionRegistry
             return HotkeyRegistrationResult.ConflictsWithApp(conflict.Key);
         }
 
-        // Přebindování téže akce na jinou zkratku – nejdřív uvolnit tu starou.
+        // Rebinding the same action to a different shortcut – release the old one first.
         if (_bindingsByActionId.TryGetValue(actionId, out var previous))
         {
             _registrar.Unregister(_windowHandle, previous.Id);
@@ -81,7 +81,7 @@ public sealed class HotkeyActionRegistry
         _bindingsByActionId.Remove(actionId);
     }
 
-    /// <summary>Volat z WM_HOTKEY hooku v UI projektu s wParam převedeným na int.</summary>
+    /// <summary>Call from the WM_HOTKEY hook in the UI project with wParam converted to int.</summary>
     public void Dispatch(int registeredId)
     {
         if (!_actionIdById.TryGetValue(registeredId, out var actionId))
@@ -106,9 +106,9 @@ public sealed class HotkeyActionRegistry
         }
         catch (Exception ex)
         {
-            // Warning, ne Error/Critical – appka běží dál, jen se tahle jedna akce
-            // nepovedla (a přes TrayNotificationSink se to zobrazí i jako tray toast).
-            _logger.LogWarning(ex, "Akce '{ActionId}' spadla.", action.Id);
+            // Warning, not Error/Critical – the app keeps running, just this one action
+            // failed (and via TrayNotificationSink it also shows up as a tray toast).
+            _logger.LogWarning(ex, "Action '{ActionId}' failed.", action.Id);
         }
     }
 

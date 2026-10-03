@@ -1,25 +1,25 @@
 namespace Centertized.Core.WindowManagement;
 
 /// <summary>
-/// Čistá geometrie centrování, oddělená od Win32 volání, ať se dá otestovat na
-/// vymyšlených obdélnících (1 monitor, 2 monitory se stejným/různým DPI) bez
-/// reálného okna na obrazovce.
+/// Pure centering geometry, separated from the Win32 calls so it can be tested on
+/// made-up rectangles (1 monitor, 2 monitors with the same/different DPI) without a
+/// real window on the screen.
 /// </summary>
 public static class WindowCenteringCalculator
 {
-    /// <param name="workArea">Pracovní plocha cílového monitoru (bez taskbaru) – rcWork, ne rcMonitor.</param>
-    /// <param name="visualBounds">Skutečné vizuální hranice okna (DWM extended frame bounds).</param>
-    /// <param name="windowRect">Hranice okna podle GetWindowRect – tímhle "jazykem" mluví SetWindowPos.</param>
-    /// <returns>Souřadnice pro SetWindowPos, aby vizuální hranice okna vyšly na střed workArea.</returns>
+    /// <param name="workArea">Work area of the target monitor (without the taskbar) – rcWork, not rcMonitor.</param>
+    /// <param name="visualBounds">Real visual bounds of the window (DWM extended frame bounds).</param>
+    /// <param name="windowRect">Window bounds per GetWindowRect – the "language" SetWindowPos speaks.</param>
+    /// <returns>Coordinates for SetWindowPos so that the window's visual bounds end up at the center of workArea.</returns>
     public static (int Left, int Top) Calculate(WindowRect workArea, WindowRect visualBounds, WindowRect windowRect)
     {
         var targetVisualLeft = workArea.Left + (workArea.Width - visualBounds.Width) / 2;
         var targetVisualTop = workArea.Top + (workArea.Height - visualBounds.Height) / 2;
 
-        // GetWindowRect bývá o pár pixelů větší než to, co je opravdu vidět
-        // (neviditelný okraj pro stín/resize) – SetWindowPos ale pozicuje podle
-        // GetWindowRect souřadnic, ne podle DWM extended frame bounds. Rozdíl mezi
-        // nimi je pro dané okno konstantní, takže se dá spočítat a odečíst.
+        // GetWindowRect is usually a few pixels larger than what is really visible
+        // (invisible border for shadow/resize) – but SetWindowPos positions by
+        // GetWindowRect coordinates, not by DWM extended frame bounds. The difference between
+        // them is constant for a given window, so it can be computed and subtracted.
         var borderLeft = visualBounds.Left - windowRect.Left;
         var borderTop = visualBounds.Top - windowRect.Top;
 
@@ -27,12 +27,12 @@ public static class WindowCenteringCalculator
     }
 
     /// <summary>
-    /// Jako <see cref="Calculate"/>, ale okno se zároveň zvětší/zmenší na požadovanou velikost
-    /// (GetWindowRect rozměry) a na střed vyjde jeho NOVÁ vizuální plocha. Neviditelné okraje
-    /// okna jsou pro dané okno konstantní, takže se z nich dá odvodit nová vizuální plocha.
-    /// Velikost se omezí tak, aby se vizuální plocha vešla do pracovní plochy.
+    /// Like <see cref="Calculate"/>, but the window is also enlarged/shrunk to the requested size
+    /// (GetWindowRect dimensions) and its NEW visual area ends up centered. The invisible borders
+    /// of a window are constant for that window, so the new visual area can be derived from them.
+    /// The size is limited so that the visual area fits into the work area.
     /// </summary>
-    /// <returns>Nové hranice okna v souřadnicích pro SetWindowPos (GetWindowRect "jazyk").</returns>
+    /// <returns>New window bounds in SetWindowPos coordinates (GetWindowRect "language").</returns>
     public static WindowRect CalculateResized(WindowRect workArea, WindowRect visualBounds, WindowRect windowRect, int desiredWidth, int desiredHeight)
     {
         var insetLeft = visualBounds.Left - windowRect.Left;

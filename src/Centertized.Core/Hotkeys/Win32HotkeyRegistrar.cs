@@ -4,7 +4,7 @@ namespace Centertized.Core.Hotkeys;
 
 public sealed class Win32HotkeyRegistrar : IHotkeyRegistrar
 {
-    // Potlačí opakované WM_HOTKEY, dokud uživatel drží klávesu.
+    // Suppresses repeated WM_HOTKEY while the user holds the key.
     private const uint MOD_NOREPEAT = 0x4000;
     private const int ERROR_HOTKEY_ALREADY_REGISTERED = 1409;
 

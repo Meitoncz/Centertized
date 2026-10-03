@@ -32,7 +32,7 @@ at a size I have to fix by hand every single time."
   again, brings it back to exactly where it was.
 - 🌗 **Looks like it belongs in Windows** — Fluent design with Mica backdrop, light / dark /
   follow-Windows theme that switches live, and a genuinely native tray menu.
-- 🌍 **English and Czech**, switchable live (follows your Windows language by default).
+- 🌍 **12 languages**, switchable live and following your Windows language by default: English, Čeština, Deutsch, Español, Français, Italiano, Polski, Português (Brasil), Українська, 日本語, 한국어, 简体中文.
 - 🗂️ **Quiet tray app** — starts with Windows if you want, can start minimized, and closing
   the window just tucks it away into the tray.
 - 🔄 **Installer and automatic updates** — a normal Setup.exe, and the app can update itself
@@ -150,7 +150,7 @@ GPLv3 — see [`LICENSE`](LICENSE) for the full text.
   left alone.
 - 📐 Automatic per-app window size memory.
 - 🚫 Per-app exceptions with a searchable app picker.
-- 🌗 Fluent UI with Mica, live light/dark/system theme, native tray menu, English and Czech.
+- 🌗 Fluent UI with Mica, live light/dark/system theme, native tray menu, 12 UI languages.
 - 🔄 Installer and automatic updates via GitHub Releases.
 
 ## 💬 Disclaimer

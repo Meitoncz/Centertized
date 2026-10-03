@@ -9,7 +9,7 @@ using Wpf.Ui.Controls;
 
 namespace Centertized.Views;
 
-/// <summary>Výběr aplikací (i hromadně přes checkboxy) pro seznam výjimek z auto-centrování.</summary>
+/// <summary>Picking apps (also in bulk via checkboxes) for the auto-center exceptions list.</summary>
 public partial class InstalledAppsWindow : FluentWindow
 {
     private readonly List<SelectableApp> _apps = [];
@@ -33,8 +33,8 @@ public partial class InstalledAppsWindow : FluentWindow
             excluded.Remove(entry.Identity.Key);
         }
 
-        // Vyřazená aplikace, která už není nainstalovaná/spuštěná, se v seznamu musí objevit taky -
-        // jinak by se při potvrzení tiše vrátila do auto-centrování.
+        // An excluded app that is no longer installed/running must show up in the list too -
+        // otherwise confirming would silently put it back into auto-centering.
         foreach (var (key, name) in excluded)
         {
             _apps.Add(new SelectableApp(new AppIdentity(key, string.IsNullOrEmpty(name) ? key : name), null) { IsSelected = true });
@@ -62,8 +62,8 @@ public partial class InstalledAppsWindow : FluentWindow
 
     private void DoneButton_Click(object sender, RoutedEventArgs e)
     {
-        // Barva puntíku v seznamu výjimek = dominantní barva ikony aplikace. Bez ikony (nenalezená
-        // appka) se předá null a zůstane dříve uložená barva, pokud nějaká je.
+        // The dot color in the exceptions list = the dominant color of the app's icon. Without an icon (an app
+        // that wasn't found) null is passed and a previously stored color stays, if there is one.
         var selected = _apps.Where(a => a.IsSelected)
             .Select(a => (a.Identity, AccentOf(a.Icon)))
             .ToList();

@@ -1,11 +1,11 @@
 namespace Centertized.Core.WindowManagement;
 
 /// <summary>
-/// Rozhoduje, jestli se okně při centrování nastaví i konkrétní velikost (zapamatovaná
-/// velikost aplikace). Odděleno od centrovací logiky, ať se dá vypnout/testovat zvlášť.
+/// Decides whether a window also gets a specific size when centered (the app's remembered
+/// size). Separated from the centering logic so it can be turned off/tested on its own.
 /// </summary>
 public interface IWindowSizePolicy
 {
-    /// <returns>True a fyzické rozměry okna (GetWindowRect, v pixelech), pokud se má velikost nastavit.</returns>
+    /// <returns>True and the physical window dimensions (GetWindowRect, in pixels) if the size should be set.</returns>
     bool TryGetTargetSize(IntPtr windowHandle, out int widthPixels, out int heightPixels);
 }

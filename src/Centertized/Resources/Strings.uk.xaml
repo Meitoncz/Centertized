@@ -1,0 +1,78 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <!-- Translation (uk) - overlays the English base, missing keys fall back to English. -->
+
+    <sys:String x:Key="Settings.Title">Налаштування Centertized</sys:String>
+
+    <sys:String x:Key="Section.Shortcuts">Комбінації клавіш</sys:String>
+    <sys:String x:Key="Section.AutoCenter">Автоцентрування</sys:String>
+    <sys:String x:Key="Section.Exceptions">Винятки автоцентрування</sys:String>
+    <sys:String x:Key="Section.General">Загальні</sys:String>
+    <sys:String x:Key="Section.About">Про програму</sys:String>
+
+    <sys:String x:Key="Action.center-active-window.Name">Центрувати активне вікно</sys:String>
+    <sys:String x:Key="Action.center-active-window.Description">Центрує активне вікно на його поточному моніторі.</sys:String>
+    <sys:String x:Key="Action.toggle-maximize-active-window.Name">Розгорнути/відновити активне вікно</sys:String>
+    <sys:String x:Key="Action.toggle-maximize-active-window.Description">Розгортає активне вікно; повторне натискання повертає попередній розмір і розташування.</sys:String>
+
+    <sys:String x:Key="General.StartWithWindows">Запускати разом із Windows</sys:String>
+    <sys:String x:Key="General.StartMinimized">Запускати згорнутим</sys:String>
+    <sys:String x:Key="General.StartMinimized.Description">Не показувати це вікно під час запуску застосунку</sys:String>
+    <sys:String x:Key="General.AutoCenter">Автоматично центрувати нові вікна</sys:String>
+    <sys:String x:Key="General.AutoCenter.Description">Автоматично центрує кожне нове вікно на його моніторі</sys:String>
+    <sys:String x:Key="General.RememberSizes">Запам’ятовувати розміри вікон</sys:String>
+    <sys:String x:Key="General.RememberSizes.Description">Вікна застосунку відкриваються з розміром, який ви задали їм востаннє. Працює разом з автоцентруванням.</sys:String>
+    <sys:String x:Key="General.RememberSizes.Forget">Забути всі розміри</sys:String>
+    <sys:String x:Key="General.RunAsAdmin">Запускати від імені адміністратора</sys:String>
+    <sys:String x:Key="General.RunAsAdmin.Description">Дозволяє Centertized переміщувати вікна застосунків, запущених від імені адміністратора. Windows попросить підтвердження (UAC), і Centertized перезапуститься.</sys:String>
+    <sys:String x:Key="General.Theme">Тема</sys:String>
+    <sys:String x:Key="General.Theme.Description">Світла, темна або як у Windows</sys:String>
+    <sys:String x:Key="General.Theme.System">Системна</sys:String>
+    <sys:String x:Key="General.Theme.Light">Світла</sys:String>
+    <sys:String x:Key="General.Theme.Dark">Темна</sys:String>
+    <sys:String x:Key="General.Language">Мова</sys:String>
+    <sys:String x:Key="General.Language.Description">Мова застосунку</sys:String>
+    <sys:String x:Key="General.Language.System">Системна</sys:String>
+
+    <sys:String x:Key="Exceptions.Intro">Нові вікна цих застосунків не центруються автоматично.</sys:String>
+    <sys:String x:Key="Exceptions.Choose">Вибрати застосунки…</sys:String>
+    <sys:String x:Key="Exceptions.Empty">Винятків немає.</sys:String>
+    <sys:String x:Key="Exceptions.Remove">Видалити</sys:String>
+
+    <sys:String x:Key="Picker.Title">Вибір застосунків</sys:String>
+    <sys:String x:Key="Picker.Hint">Позначені застосунки виключено з автоцентрування.</sys:String>
+    <sys:String x:Key="Picker.Search">Пошук застосунків</sys:String>
+    <sys:String x:Key="Picker.Done">Готово</sys:String>
+    <sys:String x:Key="Picker.Cancel">Скасувати</sys:String>
+
+    <sys:String x:Key="About.Description">Нативна утиліта для області сповіщень Windows для керування вікнами, починаючи з центрування активного вікна.</sys:String>
+    <sys:String x:Key="About.Version">Версія {0}</sys:String>
+    <sys:String x:Key="About.Title">Про Centertized</sys:String>
+    <sys:String x:Key="About.License">Ліцензія: GPLv3</sys:String>
+    <sys:String x:Key="About.Close">Закрити</sys:String>
+
+    <sys:String x:Key="Update.Title">Оновлення</sys:String>
+    <sys:String x:Key="Update.Automatic">Автоматично перевіряти оновлення</sys:String>
+    <sys:String x:Key="Update.Automatic.Description">Шукає нову версію під час запуску застосунку</sys:String>
+    <sys:String x:Key="Update.Check">Перевірити оновлення</sys:String>
+    <sys:String x:Key="Update.Checking">Перевірка…</sys:String>
+    <sys:String x:Key="Update.UpToDate">У вас найновіша версія.</sys:String>
+    <sys:String x:Key="Update.Available">Доступна версія {0}.</sys:String>
+    <sys:String x:Key="Update.Download">Завантажити й перезапустити</sys:String>
+    <sys:String x:Key="Update.Downloading">Завантаження…</sys:String>
+    <sys:String x:Key="Update.Failed">Не вдалося перевірити оновлення.</sys:String>
+    <sys:String x:Key="Update.NotInstalled">Оновлення працюють лише в установленій версії Centertized.</sys:String>
+
+    <sys:String x:Key="Hotkey.NotSet">Не задано</sys:String>
+    <sys:String x:Key="Hotkey.NeedsModifier">Потрібен Ctrl/Alt/Shift/Win</sys:String>
+    <sys:String x:Key="Hotkey.UsedBy">Зайнято: {0}</sys:String>
+    <sys:String x:Key="Hotkey.UsedElsewhere">Зайнято іншим застосунком</sys:String>
+
+    <sys:String x:Key="Tray.Open">Відкрити Centertized</sys:String>
+    <sys:String x:Key="Tray.About">Про програму</sys:String>
+    <sys:String x:Key="Tray.Close">Вийти</sys:String>
+    <sys:String x:Key="Tray.StillRunning">Працює в області сповіщень. Натисніть значок будь-коли, щоб знову відкрити налаштування.</sys:String>
+
+    <sys:String x:Key="Notice.UpdateAvailable">Доступна версія {0}. Відкрийте налаштування, щоб оновити.</sys:String>
+</ResourceDictionary>

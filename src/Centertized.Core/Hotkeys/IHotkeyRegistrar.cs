@@ -1,9 +1,9 @@
 namespace Centertized.Core.Hotkeys;
 
 /// <summary>
-/// Tenká abstrakce nad RegisterHotKey/UnregisterHotKey – existuje čistě kvůli
-/// testovatelnosti <see cref="HotkeyActionRegistry"/> bez skutečného okna a bez
-/// zásahu do systémového stavu v unit testech.
+/// A thin abstraction over RegisterHotKey/UnregisterHotKey – it exists purely for the
+/// testability of <see cref="HotkeyActionRegistry"/> without a real window and without
+/// touching the system state in unit tests.
 /// </summary>
 public interface IHotkeyRegistrar
 {

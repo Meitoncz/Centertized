@@ -2,7 +2,7 @@ using Centertized.Core.Settings;
 
 namespace Centertized.Core.WindowManagement;
 
-/// <summary>Velikost podle pravidel aplikace (<see cref="AppRulesService"/>), přepočtená na DPI okna.</summary>
+/// <summary>Size according to the app's rules (<see cref="AppRulesService"/>), converted to the window's DPI.</summary>
 public sealed class RememberedSizePolicy(AppRulesService rules, IWin32WindowService windowService, Func<bool> isEnabled) : IWindowSizePolicy
 {
     public bool TryGetTargetSize(IntPtr windowHandle, out int widthPixels, out int heightPixels)

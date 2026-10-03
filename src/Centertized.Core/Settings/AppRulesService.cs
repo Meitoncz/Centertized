@@ -13,9 +13,9 @@ public enum AppRuleChangeKind
 public sealed record AppRuleChange(AppRuleChangeKind Kind, string Key, string DisplayName, int? Width, int? Height, bool Excluded);
 
 /// <summary>
-/// Pravidla podle aplikace (výjimky z auto-centrování, zapamatované velikosti) nad
-/// <see cref="ISettingsStore"/>. Čte se z watcheru na vláknech z thread poolu a zapisuje z UI,
-/// proto je vše za zámkem a čtení jdou z paměťové kopie, ne z disku při každém novém okně.
+/// Per-app rules (auto-center exceptions, remembered sizes) on top of
+/// <see cref="ISettingsStore"/>. Read from watcher threads (thread pool) and written from the UI,
+/// so everything is under a lock and reads come from the in-memory copy, not from disk on every new window.
 /// </summary>
 public sealed class AppRulesService
 {
@@ -29,7 +29,7 @@ public sealed class AppRulesService
         _rules = Clone(store.Load().AppRules);
     }
 
-    /// <summary>Vyvolá se po každé změně (na vlákně, které změnu provedlo).</summary>
+    /// <summary>Raised after every change (on the thread that made the change).</summary>
     public event Action<AppRuleChange>? Changed;
 
     public IReadOnlyList<KeyValuePair<string, AppRule>> All()
@@ -40,7 +40,7 @@ public sealed class AppRulesService
         }
     }
 
-    /// <summary>Aplikace vyřazené z auto-centrování (klíč + pravidlo), řazené podle názvu.</summary>
+    /// <summary>Apps excluded from auto-centering (key + rule), sorted by name.</summary>
     public IReadOnlyList<KeyValuePair<string, AppRule>> ExcludedApps() =>
         All().Where(kv => kv.Value.ExcludedFromAutoCenter).ToList();
 
@@ -52,7 +52,7 @@ public sealed class AppRulesService
         }
     }
 
-    /// <summary>Zapamatovaná velikost v 96 DPI jednotkách.</summary>
+    /// <summary>Remembered size in 96-DPI units.</summary>
     public bool TryGetRememberedSize(string key, out int width, out int height)
     {
         lock (_gate)
@@ -99,8 +99,8 @@ public sealed class AppRulesService
     }
 
     /// <summary>
-    /// Nastaví seznam výjimek najednou: aplikace v excluded se vyřadí, ostatní dosud vyřazené
-    /// se vrátí. Jedno uložení a jedno oznámení místo desítek.
+    /// Sets the list of exceptions at once: apps in excluded get excluded, the other currently excluded
+    /// ones are included again. One save and one notification instead of dozens.
     /// </summary>
     public void SetExcludedApps(IReadOnlyCollection<(AppIdentity App, string? AccentColor)> excluded)
     {
@@ -136,7 +136,7 @@ public sealed class AppRulesService
         Changed?.Invoke(new AppRuleChange(AppRuleChangeKind.ExclusionChanged, "", "", null, null, true));
     }
 
-    /// <summary>Zapomene všechny zapamatované velikosti (výjimky z auto-centrování zůstanou).</summary>
+    /// <summary>Forgets all remembered sizes (auto-center exceptions stay).</summary>
     public void ClearAllRememberedSizes()
     {
         lock (_gate)
@@ -185,7 +185,7 @@ public sealed class AppRulesService
                 _rules[app.Key] = rule;
             }
 
-            // Zobrazované jméno se občas zpřesní (např. po aktualizaci appky).
+            // The display name is occasionally refined (e.g. after an app update).
             rule.DisplayName = app.DisplayName;
             change(rule);
             if (rule.IsEmpty)
@@ -222,8 +222,8 @@ public sealed class AppRulesService
         Changed?.Invoke(notification);
     }
 
-    // Načíst-změnit-uložit celé nastavení: jiné části appky (Nastavení okno) ukládají
-    // ostatní položky stejným způsobem, takže se tu nesmí přepsat nic jiného než pravidla.
+    // Load-change-save of the whole settings: other parts of the app (the Settings window) save
+    // the other items the same way, so nothing but the rules may be overwritten here.
     private void Persist()
     {
         var settings = _store.Load();

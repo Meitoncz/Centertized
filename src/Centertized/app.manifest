@@ -5,8 +5,8 @@
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
     <security>
       <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
-        <!-- Bez zvýšených práv – appka nemůže přesouvat okna běžící jako
-             administrátor (UIPI), viz poznámka v CLAUDE.md. -->
+        <!-- Not elevated by default – so the app can't move windows running as
+                  administrator (UIPI); the opt-in "Run as administrator" setting relaunches it elevated. See CLAUDE.md. -->
         <requestedExecutionLevel level="asInvoker" uiAccess="false" />
       </requestedPrivileges>
     </security>
@@ -24,8 +24,8 @@
 
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
     <windowsSettings>
-      <!-- Klíčové pro správné centrování na víc-monitorových sestavách s různým
-           škálováním DPI – bez tohohle bude geometrie oken prostě špatně. -->
+      <!-- Essential for correct centering on multi-monitor setups with different
+                DPI scaling – without this the window geometry is simply wrong. -->
       <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
       <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
     </windowsSettings>

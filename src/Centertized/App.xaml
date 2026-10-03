@@ -7,16 +7,16 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- Bez tohohle nemají WPF-UI controly (FluentWindow, NavigationView...)
-                     vůbec žádný template a jejich vnitřní části zůstanou null –
-                     SystemThemeWatcher pak jen dolaďuje barvy/backdrop naživo,
-                     samotné styly/šablony sem musí dodat ControlsDictionary. -->
+                <!-- Without this the WPF-UI controls (FluentWindow, NavigationView...)
+                          have no template at all and their inner parts stay null –
+                          SystemThemeWatcher then only fine-tunes colors/backdrop live,
+                          the styles/templates themselves must come from ControlsDictionary. -->
                 <ui:ThemesDictionary Theme="Light" />
                 <ui:ControlsDictionary />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Appka nemá hlavní okno – ikona v tray liště žije jako zdroj a musí se
-                 ve startu appky explicitně "vytvořit" (viz App.xaml.cs, ForceCreate). -->
+            <!-- The app has no main window – the tray icon lives as a resource and must be
+                      explicitly "created" at app start (see App.xaml.cs, ForceCreate). -->
             <tb:TaskbarIcon x:Key="TrayIcon" ToolTipText="Centertized"
                             TrayLeftMouseDoubleClick="TrayIcon_DoubleClick"
                             TrayRightMouseUp="TrayIcon_RightClick">

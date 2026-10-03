@@ -3,8 +3,8 @@ using System.Collections;
 namespace Centertized.Core.Actions;
 
 /// <summary>
-/// Jediné místo, kam se registrují nové akce. Shortcuts stránka v Nastavení se
-/// generuje přímo z tohohle seznamu – nová akce se tam objeví bez zásahu do XAML.
+/// The only place where new actions are registered. The Shortcuts page in Settings is
+/// generated straight from this list – a new action shows up there without touching XAML.
 /// </summary>
 public sealed class WindowActionCatalog : IReadOnlyList<IWindowAction>
 {
@@ -17,7 +17,7 @@ public sealed class WindowActionCatalog : IReadOnlyList<IWindowAction>
         var duplicateId = _actions.GroupBy(a => a.Id).FirstOrDefault(g => g.Count() > 1)?.Key;
         if (duplicateId is not null)
         {
-            throw new ArgumentException($"Duplicitní Id akce: '{duplicateId}'.", nameof(actions));
+            throw new ArgumentException($"Duplicate action Id: '{duplicateId}'.", nameof(actions));
         }
     }
 

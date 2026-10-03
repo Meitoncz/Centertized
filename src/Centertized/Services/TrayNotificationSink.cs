@@ -6,10 +6,10 @@ using Serilog.Events;
 namespace Centertized.Services;
 
 /// <summary>
-/// Serilog sink, který cokoliv na úrovni Warning a výš navíc ukáže jako tray
-/// notifikaci – typicky "SetWindowPos selhal (zvýšené okno)". Díky tomu
-/// CenterActiveWindowAction (v Core, bez znalosti tray ikony) stačí normálně
-/// logovat a UI vrstva se postará o zbytek.
+/// A Serilog sink that additionally shows anything at Warning level and above as a tray
+/// notification – typically "SetWindowPos failed (elevated window)". Thanks to this
+/// CenterActiveWindowAction (in Core, with no knowledge of the tray icon) can just log
+/// normally and the UI layer takes care of the rest.
 /// </summary>
 public sealed class TrayNotificationSink : ILogEventSink
 {

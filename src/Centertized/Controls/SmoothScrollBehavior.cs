@@ -7,14 +7,14 @@ using System.Windows.Media.Animation;
 namespace Centertized.Controls;
 
 /// <summary>
-/// WPF ScrollViewer defaultně scrolluje kolečkem myši "krokově" (skok po pevných
-/// řádcích), ne plynule jako moderní Windows appky (Nastavení, Edge...). Tohle je
-/// attached property, která na ScrollViewer napojí PreviewMouseWheel a nahradí
-/// skokovou změnu VerticalOffset animací.
+/// By default a WPF ScrollViewer scrolls with the mouse wheel in "steps" (jumping by fixed
+/// lines), not smoothly like modern Windows apps (Settings, Edge...). This is an
+/// attached property that hooks PreviewMouseWheel on the ScrollViewer and replaces the
+/// stepwise VerticalOffset change with an animation.
 ///
-/// VerticalOffset samo o sobě není animovatelné DependencyProperty (je to obyčejná
-/// CLR vlastnost měněná přes ScrollToVerticalOffset()), proto se animuje pomocná
-/// "proxy" DP a v jejím PropertyChanged callbacku se teprve volá ScrollToVerticalOffset.
+/// VerticalOffset itself is not an animatable DependencyProperty (it is an ordinary
+/// CLR property changed via ScrollToVerticalOffset()), so a helper
+/// "proxy" DP is animated and ScrollToVerticalOffset is called only in its PropertyChanged callback.
 /// </summary>
 public static class SmoothScrollBehavior
 {
@@ -28,14 +28,14 @@ public static class SmoothScrollBehavior
     private static readonly DependencyProperty AnimatedOffsetProperty = DependencyProperty.RegisterAttached(
         "AnimatedOffset", typeof(double), typeof(SmoothScrollBehavior), new PropertyMetadata(0d, OnAnimatedOffsetChanged));
 
-    // Cíl rozjeté animace, na který navazuje případný další "cvak" kolečka - bez
-    // tohohle by se při rychlém scrollování (zrychlení) počítal každý další krok
-    // z aktuální, ještě neuklidněné pozice animace, což vypadalo trhaně/poskakovaně.
+    // Target of the running animation that a further wheel "click" continues from - without
+    // this, with fast scrolling (acceleration) every next step would be computed from the
+    // current, not yet settled animation position, which looked jerky/bouncy.
     private static readonly DependencyProperty PendingTargetProperty = DependencyProperty.RegisterAttached(
         "PendingTarget", typeof(double?), typeof(SmoothScrollBehavior), new PropertyMetadata(null));
 
-    // Kolik pixelů na jeden "cvak" kolečka - Delta je typicky +-120, tohle dává
-    // podobný krok, na jaký jsou lidé zvyklí z Windows Nastavení.
+    // How many pixels per wheel "click" - Delta is typically +-120, this gives a
+    // step similar to what people are used to from Windows Settings.
     private const double PixelsPerWheelNotch = 1.2;
     private static readonly Duration AnimationDuration = new(TimeSpan.FromMilliseconds(260));
 
@@ -54,9 +54,9 @@ public static class SmoothScrollBehavior
             return;
         }
 
-        // Jiný prvek se scrollováním uvnitř (ListBox, ItemsControl...): ScrollViewer je až v jeho
-        // šabloně, která v době zapnutí ještě nemusí existovat (např. prvek je Collapsed), proto se
-        // na kolečko čeká na hostiteli a vnitřní ScrollViewer se hledá až při prvním otočení.
+        // Another element with scrolling inside (ListBox, ItemsControl...): the ScrollViewer lives in its
+        // template, which may not exist yet when this is enabled (e.g. the element is Collapsed), so
+        // the wheel is awaited on the host and the inner ScrollViewer is looked up on the first turn.
         if (d is UIElement host)
         {
             host.PreviewMouseWheel -= OnHostPreviewMouseWheel;
@@ -99,9 +99,9 @@ public static class SmoothScrollBehavior
     {
         e.Handled = true;
 
-        // Navázat na cíl předchozí (ještě běžící) animace, ne na aktuální
-        // "rozjetou" pozici - jinak rychlé po sobě jdoucí cvaknutí kolečkem
-        // efektivně zkracují ujetou dráhu každého kroku a scroll poskakuje.
+        // Continue from the target of the previous (still running) animation, not from the current
+        // "in-flight" position - otherwise quick successive wheel clicks effectively
+        // shorten the distance of each step and the scroll jerks.
         var baseline = (double?)scrollViewer.GetValue(PendingTargetProperty) ?? scrollViewer.VerticalOffset;
         var target = Math.Clamp(baseline - e.Delta * PixelsPerWheelNotch, 0, scrollViewer.ScrollableHeight);
         scrollViewer.SetValue(PendingTargetProperty, target);

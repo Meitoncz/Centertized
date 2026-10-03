@@ -1,0 +1,78 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <!-- Translation (pl) - overlays the English base, missing keys fall back to English. -->
+
+    <sys:String x:Key="Settings.Title">Ustawienia Centertized</sys:String>
+
+    <sys:String x:Key="Section.Shortcuts">Skróty</sys:String>
+    <sys:String x:Key="Section.AutoCenter">Automatyczne wyśrodkowanie</sys:String>
+    <sys:String x:Key="Section.Exceptions">Wyjątki automatycznego wyśrodkowania</sys:String>
+    <sys:String x:Key="Section.General">Ogólne</sys:String>
+    <sys:String x:Key="Section.About">Informacje</sys:String>
+
+    <sys:String x:Key="Action.center-active-window.Name">Wyśrodkuj aktywne okno</sys:String>
+    <sys:String x:Key="Action.center-active-window.Description">Wyśrodkowuje aktywne okno na jego bieżącym monitorze.</sys:String>
+    <sys:String x:Key="Action.toggle-maximize-active-window.Name">Maksymalizuj/przywróć aktywne okno</sys:String>
+    <sys:String x:Key="Action.toggle-maximize-active-window.Description">Maksymalizuje aktywne okno; ponowne naciśnięcie przywraca poprzedni rozmiar i położenie.</sys:String>
+
+    <sys:String x:Key="General.StartWithWindows">Uruchamiaj z systemem Windows</sys:String>
+    <sys:String x:Key="General.StartMinimized">Uruchamiaj zminimalizowany</sys:String>
+    <sys:String x:Key="General.StartMinimized.Description">Nie pokazuj tego okna po uruchomieniu aplikacji</sys:String>
+    <sys:String x:Key="General.AutoCenter">Automatycznie wyśrodkowuj nowe okna</sys:String>
+    <sys:String x:Key="General.AutoCenter.Description">Automatycznie wyśrodkowuje każde nowo otwarte okno na jego monitorze</sys:String>
+    <sys:String x:Key="General.RememberSizes">Zapamiętuj rozmiary okien</sys:String>
+    <sys:String x:Key="General.RememberSizes.Description">Okna aplikacji otwierają się w rozmiarze, który ostatnio im nadano. Działa razem z automatycznym wyśrodkowaniem.</sys:String>
+    <sys:String x:Key="General.RememberSizes.Forget">Zapomnij wszystkie rozmiary</sys:String>
+    <sys:String x:Key="General.RunAsAdmin">Uruchom jako administrator</sys:String>
+    <sys:String x:Key="General.RunAsAdmin.Description">Pozwala Centertized przesuwać okna aplikacji uruchomionych jako administrator. System Windows poprosi o potwierdzenie (UAC), a Centertized uruchomi się ponownie.</sys:String>
+    <sys:String x:Key="General.Theme">Motyw</sys:String>
+    <sys:String x:Key="General.Theme.Description">Jasny, ciemny lub zgodny z systemem Windows</sys:String>
+    <sys:String x:Key="General.Theme.System">Systemowy</sys:String>
+    <sys:String x:Key="General.Theme.Light">Jasny</sys:String>
+    <sys:String x:Key="General.Theme.Dark">Ciemny</sys:String>
+    <sys:String x:Key="General.Language">Język</sys:String>
+    <sys:String x:Key="General.Language.Description">Język aplikacji</sys:String>
+    <sys:String x:Key="General.Language.System">Systemowy</sys:String>
+
+    <sys:String x:Key="Exceptions.Intro">Nowe okna tych aplikacji nie są automatycznie wyśrodkowywane.</sys:String>
+    <sys:String x:Key="Exceptions.Choose">Wybierz aplikacje…</sys:String>
+    <sys:String x:Key="Exceptions.Empty">Brak wyjątków.</sys:String>
+    <sys:String x:Key="Exceptions.Remove">Usuń</sys:String>
+
+    <sys:String x:Key="Picker.Title">Wybierz aplikacje</sys:String>
+    <sys:String x:Key="Picker.Hint">Zaznaczone aplikacje są wyłączone z automatycznego wyśrodkowania.</sys:String>
+    <sys:String x:Key="Picker.Search">Szukaj aplikacji</sys:String>
+    <sys:String x:Key="Picker.Done">Gotowe</sys:String>
+    <sys:String x:Key="Picker.Cancel">Anuluj</sys:String>
+
+    <sys:String x:Key="About.Description">Natywne narzędzie zasobnika systemowego Windows do zarządzania oknami, na początek z wyśrodkowaniem aktywnego okna.</sys:String>
+    <sys:String x:Key="About.Version">Wersja {0}</sys:String>
+    <sys:String x:Key="About.Title">Informacje o programie Centertized</sys:String>
+    <sys:String x:Key="About.License">Licencja: GPLv3</sys:String>
+    <sys:String x:Key="About.Close">Zamknij</sys:String>
+
+    <sys:String x:Key="Update.Title">Aktualizacje</sys:String>
+    <sys:String x:Key="Update.Automatic">Automatycznie sprawdzaj aktualizacje</sys:String>
+    <sys:String x:Key="Update.Automatic.Description">Szuka nowej wersji po uruchomieniu aplikacji</sys:String>
+    <sys:String x:Key="Update.Check">Sprawdź aktualizacje</sys:String>
+    <sys:String x:Key="Update.Checking">Sprawdzanie…</sys:String>
+    <sys:String x:Key="Update.UpToDate">Masz najnowszą wersję.</sys:String>
+    <sys:String x:Key="Update.Available">Dostępna jest wersja {0}.</sys:String>
+    <sys:String x:Key="Update.Download">Pobierz i uruchom ponownie</sys:String>
+    <sys:String x:Key="Update.Downloading">Pobieranie…</sys:String>
+    <sys:String x:Key="Update.Failed">Nie udało się sprawdzić aktualizacji.</sys:String>
+    <sys:String x:Key="Update.NotInstalled">Aktualizacje działają tylko w zainstalowanej wersji Centertized.</sys:String>
+
+    <sys:String x:Key="Hotkey.NotSet">Nie ustawiono</sys:String>
+    <sys:String x:Key="Hotkey.NeedsModifier">Wymaga Ctrl/Alt/Shift/Win</sys:String>
+    <sys:String x:Key="Hotkey.UsedBy">Używane przez: {0}</sys:String>
+    <sys:String x:Key="Hotkey.UsedElsewhere">Używane przez inną aplikację</sys:String>
+
+    <sys:String x:Key="Tray.Open">Otwórz Centertized</sys:String>
+    <sys:String x:Key="Tray.About">Informacje</sys:String>
+    <sys:String x:Key="Tray.Close">Zamknij</sys:String>
+    <sys:String x:Key="Tray.StillRunning">Nadal działa w zasobniku. Kliknij ikonę w dowolnym momencie, aby ponownie otworzyć ustawienia.</sys:String>
+
+    <sys:String x:Key="Notice.UpdateAvailable">Dostępna jest wersja {0}. Otwórz ustawienia, aby zaktualizować.</sys:String>
+</ResourceDictionary>

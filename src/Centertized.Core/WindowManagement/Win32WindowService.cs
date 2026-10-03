@@ -14,19 +14,19 @@ public sealed class Win32WindowService : IWin32WindowService
             return false;
         }
 
-        // Settings okno appky je normální viditelné top-level okno jako každé jiné -
-        // není důvod ho z akcí vylučovat, uživatel ho může chtít centrovat/maximalizovat
-        // stejně jako cokoliv jiného. Skryté message-only okno pro hotkeys (jediné další
-        // okno appky) beztak nikdy neprojde IsWindowVisible kontrolou o pár řádků výš.
+        // The app's own Settings window is a normal visible top-level window like any other -
+        // there's no reason to exclude it from the actions, the user may want to center/maximize it
+        // just like anything else. The hidden message-only window for hotkeys (the app's only other
+        // window) never passes the IsWindowVisible check a few lines above anyway.
         var className = GetWindowClassName(windowHandle);
         if (className is "Progman" or "WorkerW")
         {
-            return false; // plocha
+            return false; // the desktop
         }
 
         if (GetWindow(windowHandle, GW_OWNER) != IntPtr.Zero)
         {
-            return false; // má vlastníka, není to samostatné top-level okno
+            return false; // it has an owner, so it isn't a standalone top-level window
         }
 
         var extendedStyle = GetWindowLong(windowHandle, GWL_EXSTYLE);
@@ -76,7 +76,7 @@ public sealed class Win32WindowService : IWin32WindowService
 
         if (GetWindowClassName(windowHandle) == "ApplicationFrameWindow")
         {
-            // Rámec patří ApplicationFrameHost.exe, skutečná appka žije v CoreWindow uvnitř.
+            // The frame belongs to ApplicationFrameHost.exe, the real app lives in the CoreWindow inside.
             var appProcessId = 0u;
             EnumChildWindows(windowHandle, (child, _) =>
             {
@@ -141,7 +141,7 @@ public sealed class Win32WindowService : IWin32WindowService
         var handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, processId);
         if (handle == IntPtr.Zero)
         {
-            return null; // typicky proces se zvýšenými právy nebo už skončil
+            return null; // typically a process with elevated rights, or it has already exited
         }
 
         try
@@ -166,7 +166,7 @@ public sealed class Win32WindowService : IWin32WindowService
             {
                 if (!string.IsNullOrWhiteSpace(candidate))
                 {
-                    // Některé appky (Store Notepad) mají v popisu i příponu souboru.
+                    // Some apps (Store Notepad) have the file extension in the description too.
                     var name = candidate.Trim();
                     return name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? name[..^4] : name;
                 }
@@ -174,7 +174,7 @@ public sealed class Win32WindowService : IWin32WindowService
         }
         catch (Exception)
         {
-            // Nečitelné verzové info není důvod nefungovat - stačí název souboru.
+            // Unreadable version info is no reason to fail - the file name is enough.
         }
 
         return fallback;

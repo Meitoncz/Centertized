@@ -1,0 +1,78 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <!-- Translation (ja) - overlays the English base, missing keys fall back to English. -->
+
+    <sys:String x:Key="Settings.Title">Centertized の設定</sys:String>
+
+    <sys:String x:Key="Section.Shortcuts">ショートカット</sys:String>
+    <sys:String x:Key="Section.AutoCenter">自動センタリング</sys:String>
+    <sys:String x:Key="Section.Exceptions">自動センタリングの除外</sys:String>
+    <sys:String x:Key="Section.General">全般</sys:String>
+    <sys:String x:Key="Section.About">バージョン情報</sys:String>
+
+    <sys:String x:Key="Action.center-active-window.Name">アクティブなウィンドウを中央に配置</sys:String>
+    <sys:String x:Key="Action.center-active-window.Description">アクティブなウィンドウを、現在のモニターの中央に配置します。</sys:String>
+    <sys:String x:Key="Action.toggle-maximize-active-window.Name">アクティブなウィンドウの最大化/元に戻す</sys:String>
+    <sys:String x:Key="Action.toggle-maximize-active-window.Description">アクティブなウィンドウを最大化します。もう一度押すと、元のサイズと位置に戻ります。</sys:String>
+
+    <sys:String x:Key="General.StartWithWindows">Windows 起動時に開始</sys:String>
+    <sys:String x:Key="General.StartMinimized">最小化した状態で起動</sys:String>
+    <sys:String x:Key="General.StartMinimized.Description">アプリの起動時にこのウィンドウを表示しない</sys:String>
+    <sys:String x:Key="General.AutoCenter">新しいウィンドウを自動的に中央に配置</sys:String>
+    <sys:String x:Key="General.AutoCenter.Description">新しく開いたウィンドウを、そのモニターの中央に自動的に配置します</sys:String>
+    <sys:String x:Key="General.RememberSizes">ウィンドウのサイズを記憶</sys:String>
+    <sys:String x:Key="General.RememberSizes.Description">アプリのウィンドウを、最後に設定したサイズで開きます。自動センタリングと併用します。</sys:String>
+    <sys:String x:Key="General.RememberSizes.Forget">すべてのサイズを消去</sys:String>
+    <sys:String x:Key="General.RunAsAdmin">管理者として実行</sys:String>
+    <sys:String x:Key="General.RunAsAdmin.Description">管理者として実行されているアプリのウィンドウを Centertized が移動できるようにします。Windows が確認 (UAC) を求め、Centertized が再起動します。</sys:String>
+    <sys:String x:Key="General.Theme">テーマ</sys:String>
+    <sys:String x:Key="General.Theme.Description">ライト、ダーク、または Windows に合わせる</sys:String>
+    <sys:String x:Key="General.Theme.System">システム</sys:String>
+    <sys:String x:Key="General.Theme.Light">ライト</sys:String>
+    <sys:String x:Key="General.Theme.Dark">ダーク</sys:String>
+    <sys:String x:Key="General.Language">言語</sys:String>
+    <sys:String x:Key="General.Language.Description">アプリの言語</sys:String>
+    <sys:String x:Key="General.Language.System">システム</sys:String>
+
+    <sys:String x:Key="Exceptions.Intro">これらのアプリの新しいウィンドウは、自動的には中央に配置されません。</sys:String>
+    <sys:String x:Key="Exceptions.Choose">アプリを選択…</sys:String>
+    <sys:String x:Key="Exceptions.Empty">除外はありません。</sys:String>
+    <sys:String x:Key="Exceptions.Remove">削除</sys:String>
+
+    <sys:String x:Key="Picker.Title">アプリを選択</sys:String>
+    <sys:String x:Key="Picker.Hint">チェックを付けたアプリは自動センタリングの対象外になります。</sys:String>
+    <sys:String x:Key="Picker.Search">アプリを検索</sys:String>
+    <sys:String x:Key="Picker.Done">完了</sys:String>
+    <sys:String x:Key="Picker.Cancel">キャンセル</sys:String>
+
+    <sys:String x:Key="About.Description">ウィンドウ管理のための Windows ネイティブのタスクトレイ ユーティリティ。まずはアクティブなウィンドウの中央配置から。</sys:String>
+    <sys:String x:Key="About.Version">バージョン {0}</sys:String>
+    <sys:String x:Key="About.Title">Centertized について</sys:String>
+    <sys:String x:Key="About.License">ライセンス: GPLv3</sys:String>
+    <sys:String x:Key="About.Close">閉じる</sys:String>
+
+    <sys:String x:Key="Update.Title">更新</sys:String>
+    <sys:String x:Key="Update.Automatic">更新を自動的に確認</sys:String>
+    <sys:String x:Key="Update.Automatic.Description">アプリの起動時に新しいバージョンを確認します</sys:String>
+    <sys:String x:Key="Update.Check">更新を確認</sys:String>
+    <sys:String x:Key="Update.Checking">確認中…</sys:String>
+    <sys:String x:Key="Update.UpToDate">最新バージョンです。</sys:String>
+    <sys:String x:Key="Update.Available">バージョン {0} が利用できます。</sys:String>
+    <sys:String x:Key="Update.Download">ダウンロードして再起動</sys:String>
+    <sys:String x:Key="Update.Downloading">ダウンロード中…</sys:String>
+    <sys:String x:Key="Update.Failed">更新を確認できませんでした。</sys:String>
+    <sys:String x:Key="Update.NotInstalled">更新は、インストール版の Centertized でのみ動作します。</sys:String>
+
+    <sys:String x:Key="Hotkey.NotSet">未設定</sys:String>
+    <sys:String x:Key="Hotkey.NeedsModifier">Ctrl/Alt/Shift/Win が必要です</sys:String>
+    <sys:String x:Key="Hotkey.UsedBy">使用中: {0}</sys:String>
+    <sys:String x:Key="Hotkey.UsedElsewhere">別のアプリで使用中</sys:String>
+
+    <sys:String x:Key="Tray.Open">Centertized を開く</sys:String>
+    <sys:String x:Key="Tray.About">バージョン情報</sys:String>
+    <sys:String x:Key="Tray.Close">終了</sys:String>
+    <sys:String x:Key="Tray.StillRunning">タスクトレイで実行中です。アイコンをクリックすると、いつでも設定を開き直せます。</sys:String>
+
+    <sys:String x:Key="Notice.UpdateAvailable">バージョン {0} が利用できます。更新するには設定を開いてください。</sys:String>
+</ResourceDictionary>

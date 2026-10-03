@@ -22,13 +22,13 @@ public class ResizedCenteringTests
     [Fact]
     public void CalculateResized_WithInvisibleBorder_CentersTheVisibleArea()
     {
-        // Viditelné okno 800x600, GetWindowRect je o 8 px větší na každé straně.
+        // Visible window 800x600, GetWindowRect is 8 px larger on each side.
         var visual = new WindowRect(108, 108, 908, 708);
         var rect = new WindowRect(100, 100, 916, 716);
 
-        var bounds = WindowCenteringCalculator.CalculateResized(WorkArea, visual, rect, 1016, 616); // vizuálně 1000x600
+        var bounds = WindowCenteringCalculator.CalculateResized(WorkArea, visual, rect, 1016, 616); // visually 1000x600
 
-        // Vizuální plocha = bounds zmenšené o 8 px okraj; ta se musí trefit na střed.
+        // Visual area = bounds shrunk by the 8 px border; that has to land on the center.
         var visualLeft = bounds.Left + 8;
         var visualRight = bounds.Right - 8;
         var visualTop = bounds.Top + 8;

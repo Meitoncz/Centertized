@@ -8,9 +8,9 @@ using Centertized.Core.WindowManagement;
 namespace Centertized.Services;
 
 /// <summary>
-/// Seznam aplikací pro výběr výjimek: Win32 aplikace ze zástupců ve Start menu, nainstalované
-/// UWP/Store aplikace (z manifestu balíčku) a aplikace, které právě mají okno. Klíč je vždy
-/// název .exe malými písmeny - stejný, jaký pro okno vrací <see cref="IWin32WindowService.GetAppIdentity"/>.
+/// List of apps for picking exceptions: Win32 apps from Start menu shortcuts, installed
+/// UWP/Store apps (from the package manifest) and apps that currently have a window. The key is always the
+/// lowercase .exe name - the same one <see cref="IWin32WindowService.GetAppIdentity"/> returns for a window.
 /// </summary>
 public static class InstalledAppsService
 {
@@ -67,7 +67,7 @@ public static class InstalledAppsService
             }
             catch (Exception)
             {
-                continue; // část složky nečitelná - vezmeme, co jde
+                continue; // part of the folder is unreadable - take what we can
             }
 
             foreach (var shortcut in shortcuts)
@@ -112,7 +112,7 @@ public static class InstalledAppsService
         }
         catch (Exception)
         {
-            yield break; // UWP seznam je bonus - bez něj se výběr obejde
+            yield break; // the UWP list is a bonus - the picker works without it
         }
 
         foreach (var package in packages)
@@ -126,7 +126,7 @@ public static class InstalledAppsService
             Dictionary<string, string> executables;
             try
             {
-                // Jen aplikace, které se opravdu ukazují v nabídce Start - ostatní jsou systémové hostitele.
+                // Only apps that really show in the Start menu - the others are system hosts.
                 entries = package.GetAppListEntriesAsync().AsTask().GetAwaiter().GetResult().ToList();
                 if (entries.Count == 0)
                 {
@@ -142,7 +142,7 @@ public static class InstalledAppsService
 
             foreach (var entry in entries)
             {
-                // AppUserModelId má tvar "PackageFamilyName!ApplicationId".
+                // AppUserModelId has the form "PackageFamilyName!ApplicationId".
                 var applicationId = entry.AppUserModelId[(entry.AppUserModelId.IndexOf('!') + 1)..];
                 if (executables.TryGetValue(applicationId, out var executable))
                 {

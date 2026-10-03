@@ -1,9 +1,9 @@
 namespace Centertized.Core.Hotkeys;
 
 /// <summary>
-/// Převod Win32 virtual-key kódu na čitelný název a zpět, bez závislosti na WPF
-/// <c>Key</c> enumu. Pokrývá běžné klávesy, které dávají smysl jako globální
-/// zkratka (písmena, číslice, funkční klávesy, pár pojmenovaných kláves).
+/// Conversion of a Win32 virtual-key code to a readable name and back, with no dependency on the WPF
+/// <c>Key</c> enum. Covers the common keys that make sense as a global
+/// shortcut (letters, digits, function keys, a few named keys).
 /// </summary>
 internal static class VirtualKeyNames
 {
@@ -29,8 +29,8 @@ internal static class VirtualKeyNames
 
     public static string ToDisplayName(uint virtualKeyCode)
     {
-        // VK_0..VK_9 (0x30-0x39) i VK_A..VK_Z (0x41-0x5A) odpovídají přímo ASCII,
-        // takže je stačí přetypovat na char.
+        // VK_0..VK_9 (0x30-0x39) and VK_A..VK_Z (0x41-0x5A) map directly to ASCII,
+        // so they can simply be cast to char.
         if (virtualKeyCode is >= 0x30 and <= 0x39 or >= 0x41 and <= 0x5A)
         {
             return ((char)virtualKeyCode).ToString();

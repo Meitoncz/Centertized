@@ -1,8 +1,8 @@
 name: Release
 
-# Vydání: git tag v1.2.3 && git push --tags
-# Workflow sestaví appku, vyrobí instalátor + balíčky pro automatické aktualizace (Velopack) a
-# vše nahraje jako GitHub Release. Appka si aktualizace stahuje právě odtud.
+# Release: git tag v1.2.3 && git push --tags
+# The workflow builds the app, produces the installer + packages for automatic updates (Velopack) and
+# uploads everything as a GitHub Release. The app downloads its updates from right there.
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
       - "v*"
 
 permissions:
-  contents: write  # vytvoření GitHub Release a nahrání souborů
+  contents: write  # creating the GitHub Release and uploading files
 
 jobs:
   release:
@@ -26,7 +26,7 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          # v1.2.3 -> 1.2.3 (tag je jediný zdroj pravdy o verzi vydání)
+          # v1.2.3 -> 1.2.3 (the tag is the single source of truth for the release version)
           $version = "${{ github.ref_name }}".TrimStart("v")
           "value=$version" >> $env:GITHUB_OUTPUT
 
@@ -43,7 +43,7 @@ jobs:
 
       - name: Download previous release (for delta updates)
         shell: pwsh
-        continue-on-error: true  # první vydání žádné předchozí nemá
+        continue-on-error: true  # the first release has no previous one
         run: vpk download github --repoUrl "${{ github.server_url }}/${{ github.repository }}" --token "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Pack installer and update packages

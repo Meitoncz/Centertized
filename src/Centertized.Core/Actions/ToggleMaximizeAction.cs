@@ -4,17 +4,17 @@ using Microsoft.Extensions.Logging;
 namespace Centertized.Core.Actions;
 
 /// <summary>
-/// Fáze 5 – druhá skutečná akce (nápad z IDEAS.md), která ověřuje, že přidání
-/// featury opravdu stačí jako nová třída + jeden řádek v katalogu (viz CLAUDE.md).
-/// Maximalizuje aktivní okno; při opětovném spuštění na okně, které takhle
-/// maximalizovala samotná appka, ho vrátí na předchozí pozici a velikost.
+/// Phase 5 – the second real action (an idea from IDEAS.md) that verifies that adding
+/// a feature really takes just a new class + one line in the catalog (see CLAUDE.md).
+/// Maximizes the active window; when run again on a window that the app itself
+/// maximized, it restores it to its previous position and size.
 /// </summary>
 public sealed class ToggleMaximizeAction : IWindowAction
 {
     public const string ActionId = "toggle-maximize-active-window";
 
-    // Klíčováno podle HWND – appka běží jen jako jedna instance a stav nepřežívá
-    // restart, takže jednoduchý in-memory slovník stačí (žádná perzistence).
+    // Keyed by HWND – the app runs as a single instance and the state doesn't survive a
+    // restart, so a simple in-memory dictionary is enough (no persistence).
     private readonly Dictionary<IntPtr, WindowRect> _boundsBeforeMaximize = new();
 
     public string Id => ActionId;
@@ -30,7 +30,7 @@ public sealed class ToggleMaximizeAction : IWindowAction
 
         if (!windowService.IsEligibleForActions(hwnd))
         {
-            context.Logger.LogDebug("Přeskočeno – okno {Handle} není způsobilé.", hwnd);
+            context.Logger.LogDebug("Skipped – window {Handle} is not eligible.", hwnd);
             return Task.CompletedTask;
         }
 
@@ -42,10 +42,10 @@ public sealed class ToggleMaximizeAction : IWindowAction
             {
                 windowService.TrySetBounds(hwnd, previousBounds);
             }
-            // Pokud v mapě není (appka maximalizaci "neviděla", např. proběhla jinak
-            // než touhle akcí), necháme okno v jeho výchozí obnovené velikosti/pozici.
+            // If it isn't in the map (the app "didn't see" the maximization, e.g. it happened another way
+            // than through this action), we leave the window at its default restored size/position.
 
-            context.Logger.LogInformation("Okno {Handle} obnoveno na předchozí pozici/velikost.", hwnd);
+            context.Logger.LogInformation("Window {Handle} restored to its previous position/size.", hwnd);
         }
         else
         {
@@ -55,7 +55,7 @@ public sealed class ToggleMaximizeAction : IWindowAction
             }
 
             windowService.Maximize(hwnd);
-            context.Logger.LogInformation("Okno {Handle} maximalizováno.", hwnd);
+            context.Logger.LogInformation("Window {Handle} maximized.", hwnd);
         }
 
         return Task.CompletedTask;

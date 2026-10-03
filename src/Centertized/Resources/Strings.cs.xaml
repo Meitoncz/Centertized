@@ -7,7 +7,6 @@
 
     <sys:String x:Key="Section.Shortcuts">Zkratky</sys:String>
     <sys:String x:Key="Section.General">Obecné</sys:String>
-    <sys:String x:Key="Section.Apps">Aplikace</sys:String>
     <sys:String x:Key="Section.About">O aplikaci</sys:String>
 
     <sys:String x:Key="Action.center-active-window.Name">Vycentrovat aktivní okno</sys:String>

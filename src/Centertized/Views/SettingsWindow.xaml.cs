@@ -23,17 +23,17 @@ public partial class SettingsWindow : FluentWindow
 
         var settings = App.SettingsStore.Load();
 
-        // ApplicationThemeManager.Apply() samo o sobě přepne jen barevné resource
-        // dictionaries - skutečné DWM vykreslování Mica řídí až vlastnost
-        // WindowBackdropType na samotném okně (FluentWindow na ni reaguje přes
-        // OnBackdropTypeChanged). Bez tohohle by Mica vůbec neběžela.
+        // ApplicationThemeManager.Apply() on its own only switches the color resource
+        // dictionaries - the actual DWM Mica rendering is controlled by the
+        // WindowBackdropType property on the window itself (FluentWindow reacts to it via
+        // OnBackdropTypeChanged). Without this Mica wouldn't run at all.
         WindowBackdropType = WindowBackdropType.Mica;
         ThemeService.Apply(settings.ThemeMode);
 
-        // Živé přebarvení bylo dřív rozbité (lepoco/wpfui#1639), ale ten bug je
-        // konkrétně o NavigationView - tohle okno žádné nemá (jedna scrollovatelná
-        // stránka místo sidebaru, viz SettingsWindow.xaml), takže SystemThemeWatcher
-        // pro "System" motiv může sledovat změny naživo bez zavírání okna.
+        // Live re-theming used to be broken (lepoco/wpfui#1639), but that bug is
+        // specific to NavigationView - this window has none (one scrollable
+        // page instead of a sidebar, see SettingsWindow.xaml), so SystemThemeWatcher
+        // can follow changes live for the "System" theme without closing the window.
         if (settings.ThemeMode == ThemePreference.System)
         {
             SystemThemeWatcher.Watch(this, WindowBackdropType.Mica);
@@ -43,10 +43,10 @@ public partial class SettingsWindow : FluentWindow
         StartWithWindowsToggle.IsChecked = _autostartService.IsEnabled();
         StartMinimizedToggle.IsChecked = settings.StartMinimized;
         ThemeModeCombo.SelectedIndex = (int)settings.ThemeMode;
-        LanguageCombo.SelectedIndex = (int)settings.Language;
+        PopulateLanguageCombo(settings.Language);
         AutoCenterNewWindowsToggle.IsChecked = settings.AutoCenterNewWindows;
         RememberSizesToggle.IsChecked = settings.RememberWindowSizes;
-        // Přepínač ukazuje skutečný stav: zapnuto = appka teď opravdu běží se zvýšenými právy.
+        // The toggle shows the real state: on = the app is actually running elevated right now.
         RunAsAdminToggle.IsChecked = settings.RunAsAdministrator && ElevationService.IsElevated;
         AutoUpdateToggle.IsChecked = settings.CheckForUpdatesAutomatically;
         _isInitializing = false;
@@ -58,8 +58,8 @@ public partial class SettingsWindow : FluentWindow
         Loc.LanguageChanged += OnLanguageChanged;
     }
 
-    // Seznam zkratek i aplikací se staví z dat (ne ze statického XAML), takže po změně
-    // jazyka nebo pravidel se prostě postaví znovu.
+    // The shortcut and app lists are built from data (not static XAML), so after a language
+    // or rule change they are simply built again.
     private void RefreshLocalizedContent()
     {
         ActionsList.ItemsSource = App.ActionCatalog
@@ -86,7 +86,7 @@ public partial class SettingsWindow : FluentWindow
         ExceptionsEmptyText.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    // Automaticky učené velikosti se mění při každém tažení okna - seznam výjimek se kvůli tomu nepřestavuje.
+    // Automatically learned sizes change on every window drag - the exceptions list is not rebuilt because of that.
     private void OnAppRulesChanged(AppRuleChange change)
     {
         if (change.Kind is AppRuleChangeKind.ExclusionChanged or AppRuleChangeKind.Removed)
@@ -113,15 +113,27 @@ public partial class SettingsWindow : FluentWindow
         settings.ThemeMode = mode;
         App.SettingsStore.Save(settings);
 
-        // Odhlásit případné staré sledování a znovu podle nové volby - jinak by
-        // appka mohla zůstat naslouchat systémovému motivu i po přepnutí na
-        // natvrdo dané Light/Dark.
+        // Unhook any old watching and set it up again according to the new choice - otherwise
+        // the app could keep listening to the system theme even after switching to a
+        // hard-coded Light/Dark.
         SystemThemeWatcher.UnWatch(this);
         ThemeService.Apply(mode);
         if (mode == ThemePreference.System)
         {
             SystemThemeWatcher.Watch(this, WindowBackdropType.Mica);
         }
+    }
+
+    // Item 0 is "System" (localized in XAML), the rest are the shipped languages by their own names.
+    private void PopulateLanguageCombo(AppLanguage selected)
+    {
+        foreach (var language in Loc.Languages)
+        {
+            LanguageCombo.Items.Add(new System.Windows.Controls.ComboBoxItem { Content = language.NativeName });
+        }
+
+        var index = Loc.Languages.ToList().FindIndex(l => l.Language == selected);
+        LanguageCombo.SelectedIndex = selected == AppLanguage.System || index < 0 ? 0 : index + 1;
     }
 
     private void LanguageCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -131,7 +143,7 @@ public partial class SettingsWindow : FluentWindow
             return;
         }
 
-        var language = (AppLanguage)LanguageCombo.SelectedIndex;
+        var language = LanguageCombo.SelectedIndex == 0 ? AppLanguage.System : Loc.Languages[LanguageCombo.SelectedIndex - 1].Language;
         var settings = App.SettingsStore.Load();
         settings.Language = language;
         App.SettingsStore.Save(settings);
@@ -159,7 +171,7 @@ public partial class SettingsWindow : FluentWindow
         var enable = RunAsAdminToggle.IsChecked == true;
         if (enable == ElevationService.IsElevated)
         {
-            return; // stav už odpovídá (např. po restartu)
+            return; // the state already matches (e.g. after a restart)
         }
 
         var settings = App.SettingsStore.Load();
@@ -168,7 +180,7 @@ public partial class SettingsWindow : FluentWindow
 
         if (!enable)
         {
-            // Úloha plánovače jde zrušit jen ze zvýšené instance - tady, dokud ještě běží.
+            // The scheduled task can only be removed from an elevated instance - here, while it still runs.
             _autostartService.Migrate(useElevatedTask: false);
         }
 
@@ -177,7 +189,7 @@ public partial class SettingsWindow : FluentWindow
             return;
         }
 
-        // Uživatel UAC odmítl - vrátit přepínač i nastavení.
+        // The user declined UAC - revert the toggle and the setting.
         if (enable)
         {
             settings.RunAsAdministrator = false;
@@ -259,7 +271,7 @@ public partial class SettingsWindow : FluentWindow
         App.SettingsStore.Save(settings);
     }
 
-    // Stav aktualizací: po kontrole se z tlačítka "Zkontrolovat" stane "Stáhnout a restartovat".
+    // Update state: after a check the "Check" button becomes "Download and restart".
     private void RefreshUpdateUi()
     {
         if (!App.Updates.IsInstalled)
@@ -292,7 +304,7 @@ public partial class SettingsWindow : FluentWindow
                 UpdateStatusText.Text = Loc.Get("Update.Downloading");
                 await App.Updates.DownloadAndRestartAsync(percent => Dispatcher.BeginInvoke(() =>
                     UpdateStatusText.Text = $"{Loc.Get("Update.Downloading")} {percent} %"));
-                return; // po úspěchu se appka sama restartuje
+                return; // after success the app restarts itself
             }
 
             UpdateStatusText.Text = Loc.Get("Update.Checking");
@@ -334,7 +346,7 @@ public partial class SettingsWindow : FluentWindow
         control.DisplayText = result.Outcome switch
         {
             HotkeyRegistrationOutcome.Success => hotkey.ToString(),
-            // Krátké hlášky - tlačítko má pevnou šířku (viz HotkeyCaptureControl.xaml).
+            // Short messages - the button has a fixed width (see HotkeyCaptureControl.xaml).
             HotkeyRegistrationOutcome.AlreadyBoundInApp => Loc.Format("Hotkey.UsedBy", DisplayNameOf(result.ConflictingActionId)),
             HotkeyRegistrationOutcome.AlreadyRegisteredExternally => Loc.Get("Hotkey.UsedElsewhere"),
             _ => control.DisplayText,
@@ -360,9 +372,9 @@ public partial class SettingsWindow : FluentWindow
     private void ExceptionRemove_Click(object sender, RoutedEventArgs e) =>
         App.AppRules.SetExcluded((string)((FrameworkElement)sender).Tag, false);
 
-    // App.xaml.cs si tohle nastaví na true těsně před Application.Shutdown() –
-    // jinak by Shutdown() při zavírání oken narazil na Cancel = true níž a appka
-    // by se nemusela korektně ukončit.
+    // App.xaml.cs sets this to true right before Application.Shutdown() -
+    // otherwise Shutdown() would run into the Cancel = true below when closing windows
+    // and the app might not exit properly.
     public bool AllowClose { get; set; }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -375,7 +387,7 @@ public partial class SettingsWindow : FluentWindow
             return;
         }
 
-        // Okno se jen schová, ne zavře – příští otevření z tray je pak okamžité.
+        // The window is only hidden, not closed - opening it again from the tray is then instant.
         e.Cancel = true;
         Hide();
         App.ShowTrayHintIfNeeded();
@@ -385,7 +397,7 @@ public partial class SettingsWindow : FluentWindow
 
     private sealed record ExceptionRow(string Key, string DisplayName, string? AccentColor)
     {
-        // Bez uložené barvy (aplikace bez ikony) neutrální šedý puntík.
+        // Without a stored color (app without an icon) a neutral grey dot.
         public System.Windows.Media.Brush AccentBrush { get; } = new System.Windows.Media.SolidColorBrush(
             AccentColorExtractor.FromHex(AccentColor) ?? System.Windows.Media.Color.FromRgb(0x8A, 0x8A, 0x8A));
     }

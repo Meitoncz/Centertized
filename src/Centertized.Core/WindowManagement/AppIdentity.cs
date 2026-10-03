@@ -1,8 +1,8 @@
 namespace Centertized.Core.WindowManagement;
 
 /// <summary>
-/// Identita aplikace, které okno patří. <paramref name="Key"/> je název .exe malými písmeny
-/// (u UWP appek skutečné .exe appky, ne ApplicationFrameHost.exe, který okno jen hostuje),
-/// <paramref name="DisplayName"/> je čitelný název pro UI, <paramref name="ExecutablePath"/> cesta k .exe (když je známá).
+/// Identity of the app a window belongs to. <paramref name="Key"/> is the lowercase .exe name
+/// (for UWP apps the real app's .exe, not ApplicationFrameHost.exe, which only hosts the window),
+/// <paramref name="DisplayName"/> is a readable name for the UI, <paramref name="ExecutablePath"/> the path to the .exe (when known).
 /// </summary>
 public sealed record AppIdentity(string Key, string DisplayName, string? ExecutablePath = null);

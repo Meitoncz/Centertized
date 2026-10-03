@@ -10,7 +10,7 @@ public class HotkeyActionRegistryTests
     private static readonly Hotkey CenterHotkey = new(HotkeyModifiers.Control | HotkeyModifiers.Alt, (uint)'C');
     private static readonly Hotkey OtherHotkey = new(HotkeyModifiers.Control | HotkeyModifiers.Alt, (uint)'V');
 
-    // Testy tady neřeší window management/logování, takže stačí no-op implementace.
+    // The tests here don't deal with window management/logging, so a no-op implementation is enough.
     private static readonly IWin32WindowService WindowService = new Win32WindowService();
 
     private static HotkeyActionRegistry CreateRegistry(IHotkeyRegistrar registrar, params IWindowAction[] actions) =>
@@ -103,7 +103,7 @@ public class HotkeyActionRegistryTests
         var boundId = registrar.Registered.Single().Id;
 
         registry.Dispatch(boundId);
-        await Task.Delay(20); // Dispatch spouští ExecuteAsync fire-and-forget
+        await Task.Delay(20); // Dispatch runs ExecuteAsync fire-and-forget
 
         Assert.Equal(1, action.ExecuteCount);
     }

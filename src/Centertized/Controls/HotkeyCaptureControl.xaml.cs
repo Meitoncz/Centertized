@@ -8,9 +8,9 @@ using Centertized.Services;
 namespace Centertized.Controls;
 
 /// <summary>
-/// Zachytí kombinaci modifikátor(y) + klávesa a nahlásí ji přes
-/// <see cref="HotkeyCaptured"/>. Samotné TryBind/konflikty/ukládání řeší okno,
-/// které control používá – tenhle control jen "poslouchá klávesnici".
+/// Captures a combination of modifier(s) + key and reports it via
+/// <see cref="HotkeyCaptured"/>. The actual TryBind/conflicts/saving is handled by the window
+/// that uses the control – this control only "listens to the keyboard".
 /// </summary>
 public partial class HotkeyCaptureControl : UserControl
 {
@@ -37,7 +37,7 @@ public partial class HotkeyCaptureControl : UserControl
     {
         e.Handled = true;
 
-        // Alt-kombinace přijdou jako Key.System s reálnou klávesou v SystemKey.
+        // Alt combinations arrive as Key.System with the real key in SystemKey.
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         if (IsModifierOnly(key))
         {
@@ -47,8 +47,8 @@ public partial class HotkeyCaptureControl : UserControl
         var modifiers = ToHotkeyModifiers(Keyboard.Modifiers);
         if (modifiers == HotkeyModifiers.None)
         {
-            // Zkratka bez modifikátoru by kolidovala s normálním psaním, proto se
-            // vůbec nezkouší zaregistrovat.
+            // A shortcut without a modifier would collide with normal typing, so it is
+            // not even tried to be registered.
             DisplayText = Loc.Get("Hotkey.NeedsModifier");
             return;
         }
@@ -82,16 +82,16 @@ public partial class HotkeyCaptureControl : UserControl
             result |= HotkeyModifiers.Shift;
         }
 
-        // Keyboard.Modifiers na Win klávesu není spolehlivý (shell si ji často
-        // zpracovává zvláštním low-level hookem dřív, než se dostane k WPF), proto
-        // fallback přes přímé GetAsyncKeyState. POZNÁMKA: tohle chytí jen Win +
-        // klávesy, které shell sám nezabírá (funkční klávesy typu Win+F12 fungují
-        // spolehlivě) - Win + písmeno/číslo je na úrovni OS zabrané shellem (Start
-        // menu, Průzkumník, atd.) a normální aplikace se k tomu vůbec nedostane.
-        // Zkoušeli jsme to řešit přes dočasný globální low-level keyboard hook,
-        // který by to potlačil - ale při chybě/nedokonalém úklidu hrozí zablokování
-        // klávesnice v celém systému (stalo se to při testování), takže se od
-        // toho záměrně ustoupilo. Win + písmeno/číslo proto zůstává nepodporované.
+        // Keyboard.Modifiers is unreliable for the Win key (the shell often
+        // handles it with a special low-level hook before it reaches WPF), so
+        // fallback to a direct GetAsyncKeyState. NOTE: this only catches Win +
+        // keys the shell doesn't claim itself (function keys such as Win+F12 work
+        // reliably) - Win + letter/number is claimed by the shell at the OS level (Start
+        // menu, Explorer, etc.) and a normal app never gets it at all.
+        // We tried to solve it with a temporary global low-level keyboard hook
+        // that would suppress it - but on an error/imperfect cleanup it risks locking the
+        // keyboard system-wide (that happened during testing), so we deliberately backed
+        // away from it. Win + letter/number therefore stays unsupported.
         if (modifiers.HasFlag(ModifierKeys.Windows) || IsWindowsKeyPhysicallyDown())
         {
             result |= HotkeyModifiers.Windows;

@@ -10,10 +10,10 @@ namespace Centertized.Services;
 public sealed record NativeMenuItem(string IconGlyph, string Text, Action Invoke);
 
 /// <summary>
-/// Skutečné nativní Windows menu (Win32 popup menu, TrackPopupMenu) - totéž, co používá Explorer a
-/// ostatní tray aplikace. Ve Windows 11 má samo zaoblené rohy, ostrý text a nativní hover; žádný
-/// WPF ContextMenu (ten je průhledné okno = rozmazaný text, vlastní focus rámeček...).
-/// Tmavý režim menu se zapíná neveřejným (ale všude používaným) uxtheme API, viz <see cref="ApplyMenuTheme"/>.
+/// A genuine native Windows menu (Win32 popup menu, TrackPopupMenu) - the same one Explorer and
+/// other tray apps use. On Windows 11 it has rounded corners, crisp text and native hover by itself; no
+/// WPF ContextMenu (that is a transparent window = blurry text, its own focus rectangle...).
+/// The menu's dark mode is turned on by a non-public (but widely used) uxtheme API, see <see cref="ApplyMenuTheme"/>.
 /// </summary>
 public static class NativeTrayMenu
 {
@@ -63,14 +63,14 @@ public static class NativeTrayMenu
             var x = at?.X ?? cursor.X;
             var y = at?.Y ?? cursor.Y;
 
-            // Bez SetForegroundWindow by se menu po kliknutí mimo nezavřelo (známý tray quirk).
+            // Without SetForegroundWindow the menu wouldn't close on an outside click (a known tray quirk).
             SetForegroundWindow(owner);
             var command = TrackPopupMenuEx(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON | TPM_BOTTOMALIGN | TPM_RIGHTALIGN, x, y, owner, IntPtr.Zero);
             PostMessage(owner, WM_NULL, IntPtr.Zero, IntPtr.Zero);
 
             if (command > 0 && command <= items.Count)
             {
-                // Až po zavření menu - položka typicky otevírá okno, které si bere fokus.
+                // Only after the menu closes - the item typically opens a window that takes focus.
                 var chosen = items[command - 1];
                 Application.Current.Dispatcher.BeginInvoke(chosen.Invoke);
             }
@@ -83,8 +83,8 @@ public static class NativeTrayMenu
         }
     }
 
-    // uxtheme #135 SetPreferredAppMode / #136 FlushMenuThemes - neveřejné ordinály, které pro tmavá
-    // Win32 menu používá např. Notepad++ nebo Windows Terminal. Při selhání zůstane světlé menu.
+    // uxtheme #135 SetPreferredAppMode / #136 FlushMenuThemes - non-public ordinals used for dark
+    // Win32 menus by e.g. Notepad++ or Windows Terminal. On failure the menu stays light.
     private static void ApplyMenuTheme(bool dark)
     {
         try
@@ -94,11 +94,11 @@ public static class NativeTrayMenu
         }
         catch (Exception ex) when (ex is EntryPointNotFoundException or DllNotFoundException)
         {
-            // Starší Windows bez těchhle ordinálů.
+            // Older Windows without these ordinals.
         }
     }
 
-    // Ikona položky: glyph z Segoe Fluent Icons vykreslený do 32bit ARGB bitmapy v barvě textu menu.
+    // Item icon: a glyph from Segoe Fluent Icons rendered into a 32-bit ARGB bitmap in the menu's text color.
     private static IntPtr CreateGlyphBitmap(string glyph, double dpi, bool dark)
     {
         var size = (int)Math.Round(16 * dpi);

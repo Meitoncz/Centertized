@@ -4,8 +4,8 @@ using Velopack.Sources;
 namespace Centertized.Services;
 
 /// <summary>
-/// Aktualizace přes Velopack z GitHub Releases. Funguje jen v nainstalované appce (vydání
-/// z instalátoru) - při běhu z Visual Studia/dotnet run je <see cref="IsInstalled"/> false.
+/// Updates via Velopack from GitHub Releases. Works only in an installed app (a release
+/// from the installer) - when run from Visual Studio/dotnet run, <see cref="IsInstalled"/> is false.
 /// </summary>
 public sealed class UpdateService
 {
@@ -14,7 +14,7 @@ public sealed class UpdateService
 
     public bool IsInstalled => _manager.IsInstalled;
 
-    /// <summary>Verze, která je dostupná ke stažení (po <see cref="CheckAsync"/>), jinak null.</summary>
+    /// <summary>The version available for download (after <see cref="CheckAsync"/>), otherwise null.</summary>
     public string? PendingVersion => _pending?.TargetFullRelease.Version.ToString();
 
     public async Task<bool> CheckAsync()
@@ -23,7 +23,7 @@ public sealed class UpdateService
         return _pending is not null;
     }
 
-    /// <summary>Stáhne aktualizaci a appku restartuje; po úspěchu se sem řízení nevrátí.</summary>
+    /// <summary>Downloads the update and restarts the app; on success control doesn't return here.</summary>
     public async Task DownloadAndRestartAsync(Action<int>? progress = null)
     {
         if (_pending is null)

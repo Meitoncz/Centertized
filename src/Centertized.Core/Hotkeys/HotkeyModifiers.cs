@@ -1,10 +1,10 @@
 namespace Centertized.Core.Hotkeys;
 
 /// <summary>
-/// Záměrně vlastní enum místo WPF <c>System.Windows.Input.ModifierKeys</c> – tenhle
-/// projekt nesmí mít závislost na WPF (viz CLAUDE.md). Hodnoty odpovídají 1:1 Win32
-/// konstantám MOD_ALT/MOD_CONTROL/MOD_SHIFT/MOD_WIN, takže se dají přímo přetypovat
-/// a poslat do RegisterHotKey bez dalšího překladu.
+/// Deliberately our own enum instead of the WPF <c>System.Windows.Input.ModifierKeys</c> – this
+/// project must not depend on WPF (see CLAUDE.md). The values match the Win32
+/// constants MOD_ALT/MOD_CONTROL/MOD_SHIFT/MOD_WIN 1:1, so they can be cast directly
+/// and passed to RegisterHotKey without further translation.
 /// </summary>
 [Flags]
 public enum HotkeyModifiers : uint

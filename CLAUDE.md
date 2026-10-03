@@ -4,17 +4,19 @@ Native Windows tray utility. First feature: a global hotkey (user-configurable, 
 best-effort conflict detection) centers the active/foreground window on its current
 monitor. Built to be extended with more window-management features over time.
 
-## Language convention (user request, 2026-09-22)
+## Language convention (updated 2026-10-03 - everything on GitHub is English)
 
-- All conversational replies to the user: **Czech**.
-- All comments inside the application source code: **Czech**.
-- All user-facing app UI strings (menu items, window/page titles, button labels,
-  in-app messages): **localized through resource dictionaries** (`Resources/Strings.en.xaml`
-  is the base/fallback, `Strings.cs.xaml` overlays it; `Services/Loc.cs`). Never hard-code
-  UI text: add the key to BOTH dictionaries, use `{DynamicResource Key}` in XAML and
-  `Loc.Get/Format` in code (updated 2026-09-23 when Czech localization shipped). Log
-  messages and code comments stay Czech.
-- This file (CLAUDE.md) and any other Claude-internal notes: English is fine.
+- **Everything in the repository is English**: code comments (`//`, `///`, XAML `<!-- -->`),
+  log messages, exception messages, test names/comments, commit messages, README, TODO.md,
+  CLAUDE.md, workflow files, GitHub repo description, PR text. This is a standing rule from the
+  user - always write new comments/commits/docs in English, and translate any Czech you meet.
+  (History before 2026-10-03 still has Czech commit messages; do not rewrite history for that.)
+- Conversational replies to the user in the chat: **Czech** (unchanged).
+- User-facing UI strings are **localized through resource dictionaries**
+  (`Resources/Strings.en.xaml` is the base/fallback, `Strings.cs.xaml` overlays it with the Czech
+  translation; `Services/Loc.cs`). Never hard-code UI text: add the key to BOTH dictionaries, use
+  `{DynamicResource Key}` in XAML and `Loc.Get/Format` in code. `Strings.cs.xaml` is the one file
+  that legitimately contains Czech.
 
 ## Stack
 
@@ -59,7 +61,7 @@ combo, About version text) lives together in `SettingsWindow.xaml.cs`.
 
 This replaced an earlier `NavigationView`-based sidebar design from Phase 1. Two reasons,
 both from direct user feedback 2026-09-23: (1) a sidebar felt oversized for an app with
-only 3 small sections ("nevhodný pro tenhle typ aplikace"), and (2) removing
+only 3 small sections ("not suitable for this kind of app"), and (2) removing
 `NavigationView` incidentally fixed the live-theme-switch corruption bug (see Known
 issues) since that bug is specifically triggered by `NavigationView`. Don't reintroduce
 `NavigationView` here without re-checking whether lepoco/wpfui#1639 has been fixed
@@ -367,7 +369,7 @@ Design notes worth keeping for next time:
   launched the app, opened Notepad via PowerShell (no `MoveWindow` needed — the window's
   own default position was off-center already), waited briefly, and read back its DWM
   extended-frame-bounds center vs. the monitor's work-area center — matched to within 1px,
-  and the activity log showed the expected "Okno … přesunuto" entry timed to match. Also
+  and the activity log showed the expected "Window … moved to" entry timed to match. Also
   confirmed via the log that switching the log level to Debug for the watcher's own
   failures eliminated the Warning-level spam from Settings-window-internal popups without
   losing the hotkey path's Warning behavior.
@@ -413,7 +415,7 @@ Verified: open Settings, move it, `WM_CLOSE`, reopen -> centered again; three co
 starts (ApplicationFrameHost killed first) all settled on the centered position by ~530ms.
 
 PowerShell test-script gotchas found while verifying this (worth knowing next time):
-Windows PowerShell 5.1 reads a BOM-less .ps1 as ANSI, so a literal like "Nastavení"
+Windows PowerShell 5.1 reads a BOM-less .ps1 as ANSI, so a literal with diacritics (e.g. the Czech word for "Settings")
 silently never matches — build such strings from `[char]` codes; and variables inside a
 scriptblock passed as an `EnumWindows` delegate are unreliable — collect raw results into
 a `$script:` ArrayList and filter outside the callback.
@@ -521,8 +523,8 @@ picker with UI Automation (checked 4 apps, pressed Done): the stored colors matc
 dictionary always merged and overlays Czech, so a missing key falls back to English; the
 language switches live (`SettingsWindow` rebuilds its data-driven lists on
 `Loc.LanguageChanged`). `AppSettings.Language` defaults to `System` (Czech Windows -> Czech UI,
-otherwise English). Known leftover: Warning-level *log* messages still reach the user as tray
-balloons through `TrayNotificationSink` in Czech (would need message keys).
+otherwise English). Known leftover: Warning-level *log* messages reach the user as tray
+balloons through `TrayNotificationSink` and are English-only (they would need message keys).
 
 **Tray menu - the long way round, do not repeat it.** Attempt 1: WPF `ContextMenu` with
 `ui:MenuItem` (blurry text because it is a transparent layered window, so no ClearType; a white
@@ -568,7 +570,7 @@ patterns can fail to parse as a whole (nothing runs) - write files with the Writ
 ## Session 2026-10-03: "Run as administrator" mode
 
 Trigger: the user's RHI app (WinUI 3, runs elevated) never centered. Diagnosed from the log
-(`SetWindowPos ... selhal (pravděpodobně běží se zvýšenými právy)` for RHI's hwnd) and
+(`SetWindowPos for window ... failed (it probably runs elevated)` for RHI's hwnd) and
 `OpenProcess` -> access denied on RHI.exe: UIPI, exactly the documented limitation.
 
 Implementation: `AppSettings.RunAsAdministrator` + a toggle in General. `ElevationService`:
@@ -605,3 +607,23 @@ theme, language) and About (updates + about card). Column assignment is just XAM
 card between the two `StackPanel`s to rearrange. The README screenshot (`docs/images/settings.png`)
 must be taken with admin mode OFF in `settings.json` (an elevated instance can't be captured by a
 non-elevated script and yields a blank image) and with `Language: English`.
+
+## Localization: 12 languages (2026-10-03)
+
+Languages: English (base), Čeština, Deutsch, Español, Français, Italiano, Polski, Português (Brasil),
+Українська, 日本語, 한국어, 简体中文 — the usual app-localization top set plus the user's own
+(Czech) and Polish/Ukrainian by the user's choice; Russian is deliberately not included, by the
+maintainer's choice (do not add it unasked). Each language is `Resources/Strings.<code>.xaml` (codes: en cs de es fr it
+pl pt uk ja ko zh), listed in `Loc.Languages` (enum value, file code, name written in the language itself)
+and as a value of `AppLanguage` (stored in settings.json by name, so adding values is safe).
+`Loc.ResolveSystemLanguage` maps the Windows UI language to ours by two-letter code (every `zh-*`
+-> Simplified, every `pt-*` -> Brazilian wording) and falls back to English. The picker in Settings is built
+in code from `Loc.Languages` (item 0 = "System", localized in XAML).
+
+To add a language: add the `AppLanguage` value, a `Loc.Languages` row and the dictionary. `TranslationDictionaryTests`
+fails if a dictionary has missing/extra keys, an empty value, different `{0}` placeholders, or if the number of
+dictionary files doesn't match the number of `AppLanguage` values. Gotcha: a XAML string value starting with `{`
+is parsed as a markup extension — the generator escaped such values as `{}`..., avoid starting values with a brace.
+The translations were written by the assistant (not native-reviewed); fixing wording in a dictionary is always fine.
+Verified visually in Japanese, German and Ukrainian (no clipped text in the two-column layout); the window title
+is localized too, so scripts must find the Settings window by class, not by title prefix.

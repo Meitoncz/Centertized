@@ -42,7 +42,7 @@ public class JsonSettingsStoreTests : IDisposable
         var rawJson = File.ReadAllText(_tempFile);
         var loaded = store.Load();
 
-        // Enum se musí ukládat jako čitelný string (ne 0/1/2) - viz JsonStringEnumConverter.
+        // The enum must be stored as a readable string (not 0/1/2) - see JsonStringEnumConverter.
         Assert.Contains("\"Dark\"", rawJson);
         Assert.Equal(ThemePreference.Dark, loaded.ThemeMode);
     }

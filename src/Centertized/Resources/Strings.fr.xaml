@@ -1,0 +1,78 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <!-- Translation (fr) - overlays the English base, missing keys fall back to English. -->
+
+    <sys:String x:Key="Settings.Title">Paramètres de Centertized</sys:String>
+
+    <sys:String x:Key="Section.Shortcuts">Raccourcis</sys:String>
+    <sys:String x:Key="Section.AutoCenter">Centrage automatique</sys:String>
+    <sys:String x:Key="Section.Exceptions">Exceptions du centrage automatique</sys:String>
+    <sys:String x:Key="Section.General">Général</sys:String>
+    <sys:String x:Key="Section.About">À propos</sys:String>
+
+    <sys:String x:Key="Action.center-active-window.Name">Centrer la fenêtre active</sys:String>
+    <sys:String x:Key="Action.center-active-window.Description">Centre la fenêtre active sur son moniteur actuel.</sys:String>
+    <sys:String x:Key="Action.toggle-maximize-active-window.Name">Agrandir/restaurer la fenêtre active</sys:String>
+    <sys:String x:Key="Action.toggle-maximize-active-window.Description">Agrandit la fenêtre active ; un nouvel appui rétablit la taille et la position précédentes.</sys:String>
+
+    <sys:String x:Key="General.StartWithWindows">Démarrer avec Windows</sys:String>
+    <sys:String x:Key="General.StartMinimized">Démarrer réduit</sys:String>
+    <sys:String x:Key="General.StartMinimized.Description">Ne pas afficher cette fenêtre au démarrage de l'application</sys:String>
+    <sys:String x:Key="General.AutoCenter">Centrer automatiquement les nouvelles fenêtres</sys:String>
+    <sys:String x:Key="General.AutoCenter.Description">Centre automatiquement chaque fenêtre nouvellement ouverte sur son moniteur</sys:String>
+    <sys:String x:Key="General.RememberSizes">Mémoriser la taille des fenêtres</sys:String>
+    <sys:String x:Key="General.RememberSizes.Description">Les fenêtres d'une application s'ouvrent à la dernière taille que vous leur avez donnée. Fonctionne avec le centrage automatique.</sys:String>
+    <sys:String x:Key="General.RememberSizes.Forget">Oublier toutes les tailles</sys:String>
+    <sys:String x:Key="General.RunAsAdmin">Exécuter en tant qu'administrateur</sys:String>
+    <sys:String x:Key="General.RunAsAdmin.Description">Permet à Centertized de déplacer les fenêtres des applications exécutées en tant qu'administrateur. Windows demande une confirmation (UAC) et Centertized redémarre.</sys:String>
+    <sys:String x:Key="General.Theme">Thème</sys:String>
+    <sys:String x:Key="General.Theme.Description">Clair, sombre ou celui de Windows</sys:String>
+    <sys:String x:Key="General.Theme.System">Système</sys:String>
+    <sys:String x:Key="General.Theme.Light">Clair</sys:String>
+    <sys:String x:Key="General.Theme.Dark">Sombre</sys:String>
+    <sys:String x:Key="General.Language">Langue</sys:String>
+    <sys:String x:Key="General.Language.Description">Langue de l'application</sys:String>
+    <sys:String x:Key="General.Language.System">Système</sys:String>
+
+    <sys:String x:Key="Exceptions.Intro">Les nouvelles fenêtres de ces applications ne sont pas centrées automatiquement.</sys:String>
+    <sys:String x:Key="Exceptions.Choose">Choisir des applications…</sys:String>
+    <sys:String x:Key="Exceptions.Empty">Aucune exception.</sys:String>
+    <sys:String x:Key="Exceptions.Remove">Supprimer</sys:String>
+
+    <sys:String x:Key="Picker.Title">Choisir des applications</sys:String>
+    <sys:String x:Key="Picker.Hint">Les applications cochées sont exclues du centrage automatique.</sys:String>
+    <sys:String x:Key="Picker.Search">Rechercher des applications</sys:String>
+    <sys:String x:Key="Picker.Done">Terminé</sys:String>
+    <sys:String x:Key="Picker.Cancel">Annuler</sys:String>
+
+    <sys:String x:Key="About.Description">Un utilitaire natif de la zone de notification Windows pour gérer les fenêtres, à commencer par le centrage de la fenêtre active.</sys:String>
+    <sys:String x:Key="About.Version">Version {0}</sys:String>
+    <sys:String x:Key="About.Title">À propos de Centertized</sys:String>
+    <sys:String x:Key="About.License">Licence : GPLv3</sys:String>
+    <sys:String x:Key="About.Close">Fermer</sys:String>
+
+    <sys:String x:Key="Update.Title">Mises à jour</sys:String>
+    <sys:String x:Key="Update.Automatic">Rechercher les mises à jour automatiquement</sys:String>
+    <sys:String x:Key="Update.Automatic.Description">Recherche une nouvelle version au démarrage de l'application</sys:String>
+    <sys:String x:Key="Update.Check">Rechercher des mises à jour</sys:String>
+    <sys:String x:Key="Update.Checking">Recherche…</sys:String>
+    <sys:String x:Key="Update.UpToDate">Vous avez la dernière version.</sys:String>
+    <sys:String x:Key="Update.Available">La version {0} est disponible.</sys:String>
+    <sys:String x:Key="Update.Download">Télécharger et redémarrer</sys:String>
+    <sys:String x:Key="Update.Downloading">Téléchargement…</sys:String>
+    <sys:String x:Key="Update.Failed">Impossible de rechercher les mises à jour.</sys:String>
+    <sys:String x:Key="Update.NotInstalled">Les mises à jour ne fonctionnent que dans la version installée de Centertized.</sys:String>
+
+    <sys:String x:Key="Hotkey.NotSet">Non défini</sys:String>
+    <sys:String x:Key="Hotkey.NeedsModifier">Nécessite Ctrl/Alt/Maj/Win</sys:String>
+    <sys:String x:Key="Hotkey.UsedBy">Utilisé par {0}</sys:String>
+    <sys:String x:Key="Hotkey.UsedElsewhere">Utilisé par une autre application</sys:String>
+
+    <sys:String x:Key="Tray.Open">Ouvrir Centertized</sys:String>
+    <sys:String x:Key="Tray.About">À propos</sys:String>
+    <sys:String x:Key="Tray.Close">Fermer</sys:String>
+    <sys:String x:Key="Tray.StillRunning">Toujours en cours d'exécution dans la zone de notification. Cliquez sur l'icône à tout moment pour rouvrir les paramètres.</sys:String>
+
+    <sys:String x:Key="Notice.UpdateAvailable">La version {0} est disponible. Ouvrez les paramètres pour mettre à jour.</sys:String>
+</ResourceDictionary>

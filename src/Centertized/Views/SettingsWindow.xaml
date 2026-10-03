@@ -9,10 +9,10 @@
                  WindowStartupLocation="CenterScreen"
                  ExtendsContentIntoTitleBar="True">
     <ui:FluentWindow.Resources>
-        <!-- Výchozí CornerRadius karet je moc malý/hranatý oproti referenci
-             (Windows Nastavení apod.) - implicitní styl přebíjí na zaoblenější.
-             UseLayoutRounding=False, jinak při zlomkovém DPI scale (125 % apod.)
-             WPF snapuje hrany na celé pixely a zaoblený roh vyjde "schodovitě". -->
+        <!-- The default CornerRadius of the cards is too small/boxy compared to the reference
+                  (Windows Settings etc.) - an implicit style overrides it with a rounder one.
+                  UseLayoutRounding=False, otherwise at fractional DPI scales (125 % etc.)
+                  WPF snaps edges to whole pixels and a rounded corner comes out "stair-stepped". -->
         <Style TargetType="{x:Type ui:CardControl}" BasedOn="{StaticResource {x:Type ui:CardControl}}">
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="UseLayoutRounding" Value="False" />
@@ -22,10 +22,10 @@
             <Setter Property="UseLayoutRounding" Value="False" />
         </Style>
     </ui:FluentWindow.Resources>
-    <!-- Žádný NavigationView - pro appku téhle velikosti je sidebar zbytečný
-         a navíc je NavigationView přímý spouštěč potvrzeného, dosud neopraveného
-         WPF-UI bugu při živém přebarvení (lepoco/wpfui#1639). Jedna scrollovatelná
-         stránka se sekcemi - stejný vzorec jako oficiální WPF-UI Gallery SettingsPage. -->
+    <!-- No NavigationView - for an app of this size a sidebar is unnecessary,
+              and NavigationView is also a direct trigger of a confirmed, still unfixed
+              WPF-UI bug on live re-theming (lepoco/wpfui#1639). One scrollable
+              page with sections - the same pattern as the official WPF-UI Gallery SettingsPage. -->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -116,7 +116,7 @@
                             <ui:CardControl Margin="0,0,0,12">
                                 <ui:CardControl.Header>
                                     <StackPanel Orientation="Horizontal">
-                                        <!-- Barva puntíku = dominantní barva ikony aplikace (viz AccentColorExtractor). -->
+                                        <!-- The dot color = the dominant color of the app's icon (see AccentColorExtractor). -->
                                         <Ellipse Width="10" Height="10" Margin="0,0,10,0" VerticalAlignment="Center"
                                                  Fill="{Binding AccentBrush}" />
                                         <ui:TextBlock FontTypography="BodyStrong" Text="{Binding DisplayName}" />
@@ -191,8 +191,6 @@
                     <ComboBox x:Name="LanguageCombo" MinWidth="160"
                               SelectionChanged="LanguageCombo_SelectionChanged">
                         <ComboBoxItem Content="{DynamicResource General.Language.System}" />
-                        <ComboBoxItem Content="English" />
-                        <ComboBoxItem Content="Čeština" />
                     </ComboBox>
                 </ui:CardControl>
 

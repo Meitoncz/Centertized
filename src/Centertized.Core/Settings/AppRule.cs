@@ -3,18 +3,18 @@ using System.Text.Json.Serialization;
 namespace Centertized.Core.Settings;
 
 /// <summary>
-/// Pravidla pro jednu aplikaci (klíč = název .exe malými písmeny, viz AppIdentity).
-/// Rozměry jsou v "96 DPI jednotkách", ne ve fyzických pixelech - jinak by se zapamatovaná
-/// velikost na monitoru s jiným škálováním zobrazila jinak velká.
+/// Rules for one app (key = lowercase .exe name, see AppIdentity).
+/// Dimensions are in "96 DPI units", not physical pixels - otherwise a remembered
+/// size would look different on a monitor with different scaling.
 /// </summary>
 public sealed class AppRule
 {
     public string DisplayName { get; set; } = "";
 
-    /// <summary>Nové okno téhle appky se nemá automaticky centrovat.</summary>
+    /// <summary>New windows of this app must not be centered automatically.</summary>
     public bool ExcludedFromAutoCenter { get; set; }
 
-    /// <summary>Dominantní barva ikony aplikace ("#RRGGBB") pro barevný puntík v seznamu výjimek.</summary>
+    /// <summary>Dominant color of the app's icon ("#RRGGBB") for the colored dot in the exceptions list.</summary>
     public string? AccentColor { get; set; }
 
     public int? RememberedWidth { get; set; }
@@ -24,7 +24,7 @@ public sealed class AppRule
     [JsonIgnore]
     public bool HasRememberedSize => RememberedWidth is > 0 && RememberedHeight is > 0;
 
-    /// <summary>Pravidlo, které nic nenastavuje, nemá smysl držet v nastavení.</summary>
+    /// <summary>A rule that sets nothing isn't worth keeping in the settings.</summary>
     [JsonIgnore]
     public bool IsEmpty => !ExcludedFromAutoCenter && !HasRememberedSize;
 }

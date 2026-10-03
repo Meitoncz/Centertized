@@ -3,16 +3,16 @@ using System.Text;
 namespace Centertized.Core.Hotkeys;
 
 /// <summary>
-/// Kombinace modifikátorů + jedné klávesy. Kanonický textový formát (pro ukládání
-/// do settings.json i zobrazení v UI) je vždy "Ctrl+Alt+Shift+Win+Klávesa" v tomhle
-/// pevném pořadí, takže porovnávání stringů je spolehlivé.
+/// A combination of modifiers + one key. The canonical text format (for storing
+/// in settings.json and for display in the UI) is always "Ctrl+Alt+Shift+Win+Key" in this
+/// fixed order, so comparing strings is reliable.
 /// </summary>
 public readonly record struct Hotkey(HotkeyModifiers Modifiers, uint VirtualKeyCode)
 {
     public override string ToString()
     {
-        // Lokální funkce ve struct metodě nesmí zachytávat "this", proto modifiers
-        // jako explicitní parametr místo čtení Modifiers přímo.
+        // A local function in a struct method mustn't capture "this", hence modifiers
+        // as an explicit parameter instead of reading Modifiers directly.
         var modifiers = Modifiers;
         var sb = new StringBuilder();
         AppendIfSet(sb, modifiers, HotkeyModifiers.Control, "Ctrl");
@@ -55,7 +55,7 @@ public readonly record struct Hotkey(HotkeyModifiers Modifiers, uint VirtualKeyC
         var parts = text.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length < 2)
         {
-            // Potřebujeme aspoň jeden modifikátor a jednu klávesu.
+            // We need at least one modifier and one key.
             return false;
         }
 

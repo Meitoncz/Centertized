@@ -8,7 +8,7 @@ public static class AppInfo
 
     public static string RepositoryDisplay => "github.com/Meitoncz/Centertized";
 
-    /// <summary>Verze bez případného "+commit" sufixu, který SDK přidává do InformationalVersion.</summary>
+    /// <summary>The version without the optional "+commit" suffix that the SDK adds to InformationalVersion.</summary>
     public static string Version
     {
         get

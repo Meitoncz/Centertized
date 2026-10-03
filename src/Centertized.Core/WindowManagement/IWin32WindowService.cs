@@ -1,17 +1,17 @@
 namespace Centertized.Core.WindowManagement;
 
 /// <summary>
-/// Fasáda nad Win32 voláními pro práci s okny/monitory. Existuje hlavně kvůli
-/// testovatelnosti – <see cref="Actions.CenterActiveWindowAction"/> se dá testovat
-/// s fake implementací místo skutečného okna na obrazovce.
+/// Facade over the Win32 calls for working with windows/monitors. It exists mainly for
+/// testability – <see cref="Actions.CenterActiveWindowAction"/> can be tested
+/// with a fake implementation instead of a real window on the screen.
 /// </summary>
 public interface IWin32WindowService
 {
     IntPtr GetForegroundWindowHandle();
 
     /// <summary>
-    /// Jestli má vůbec smysl s tímhle oknem něco dělat – vlastní okna appky, desktop
-    /// (Progman/WorkerW), tool windows bez WS_EX_APPWINDOW apod. se přeskakují.
+    /// Whether it makes any sense to do anything with this window – the app's own windows, the desktop
+    /// (Progman/WorkerW), tool windows without WS_EX_APPWINDOW etc. are skipped.
     /// </summary>
     bool IsEligibleForActions(IntPtr windowHandle);
 
@@ -20,27 +20,27 @@ public interface IWin32WindowService
     string GetWindowClassName(IntPtr windowHandle);
 
     /// <summary>
-    /// Má okno standardní záhlaví (WS_CAPTION)? Odlišuje běžná okna aplikací od notifikací
-    /// (toasty), overlayů, popupů a shellových oken, která se automaticky centrovat nemají.
+    /// Does the window have a standard title bar (WS_CAPTION)? Tells regular app windows apart from notifications
+    /// (toasts), overlays, popups and shell windows, which should not be centered automatically.
     /// </summary>
     bool HasTitleBar(IntPtr windowHandle);
 
-    /// <summary>Jde okno myší zvětšovat/zmenšovat (WS_THICKFRAME)? Jinak mu velikost nastavovat nemá smysl.</summary>
+    /// <summary>Can the window be resized with the mouse (WS_THICKFRAME)? Otherwise setting its size makes no sense.</summary>
     bool IsResizable(IntPtr windowHandle);
 
-    /// <summary>DPI monitoru, na kterém okno je (96 = 100 %).</summary>
+    /// <summary>DPI of the monitor the window is on (96 = 100 %).</summary>
     int GetDpi(IntPtr windowHandle);
 
     /// <summary>
-    /// Aplikace, které okno patří - u UWP oken skutečná appka, ne ApplicationFrameHost.exe.
-    /// Null, když se identitu nepodaří zjistit (např. UWP rámec, který ještě nemá obsah).
+    /// The app the window belongs to - for UWP windows the real app, not ApplicationFrameHost.exe.
+    /// Null when the identity can't be determined (e.g. a UWP frame that has no content yet).
     /// </summary>
     AppIdentity? GetAppIdentity(IntPtr windowHandle);
 
-    /// <summary>Viditelná běžná okna aplikací (se záhlavím, způsobilá pro akce) - pro výběr "spuštěné aplikace".</summary>
+    /// <summary>Visible regular app windows (with a title bar, eligible for actions) - for picking a "running app".</summary>
     IReadOnlyList<IntPtr> GetTopLevelAppWindows();
 
-    /// <summary>Krátký textový popis okna (třída, styly, proces) pro diagnostiku v logu.</summary>
+    /// <summary>Short text description of a window (class, styles, process) for diagnostics in the log.</summary>
     string DescribeWindow(IntPtr windowHandle);
 
     bool IsMaximized(IntPtr windowHandle);
@@ -49,17 +49,17 @@ public interface IWin32WindowService
 
     void Maximize(IntPtr windowHandle);
 
-    /// <summary>Skutečné vizuální hranice (DWM extended frame bounds), ne GetWindowRect.</summary>
+    /// <summary>Real visual bounds (DWM extended frame bounds), not GetWindowRect.</summary>
     bool TryGetVisualBounds(IntPtr windowHandle, out WindowRect bounds);
 
     bool TryGetWindowRect(IntPtr windowHandle, out WindowRect bounds);
 
-    /// <summary>Pracovní plocha (bez taskbaru) monitoru, na kterém okno aktuálně je.</summary>
+    /// <summary>Work area (without the taskbar) of the monitor the window is currently on.</summary>
     bool TryGetMonitorWorkArea(IntPtr windowHandle, out WindowRect workArea);
 
-    /// <summary>Přesune okno beze změny velikosti a bez krádeže focusu; true = SetWindowPos uspěl.</summary>
+    /// <summary>Moves the window without changing its size and without stealing focus; true = SetWindowPos succeeded.</summary>
     bool TrySetPosition(IntPtr windowHandle, int left, int top);
 
-    /// <summary>Nastaví pozici i velikost najednou (GetWindowRect "jazyk"), bez krádeže focusu.</summary>
+    /// <summary>Sets position and size at once (GetWindowRect "language"), without stealing focus.</summary>
     bool TrySetBounds(IntPtr windowHandle, WindowRect bounds);
 }

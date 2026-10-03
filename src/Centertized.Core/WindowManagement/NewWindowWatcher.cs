@@ -7,46 +7,46 @@ using static Centertized.Core.WindowManagement.NativeMethods;
 namespace Centertized.Core.WindowManagement;
 
 /// <summary>
-/// Sleduje přes SetWinEventHook (EVENT_OBJECT_SHOW), kdy se nějaké okno poprvé zobrazí,
-/// a rovnou ho vycentruje - základ pro "auto-centrovat každé nově otevřené okno"
-/// (viz TODO.md). EVENT_OBJECT_SHOW záměrně místo EVENT_SYSTEM_FOREGROUND - nastává
-/// dřív (ve chvíli ShowWindow(SW_SHOW), ne až po přebrání focusu), takže je menší šance,
-/// že uživatel okno stihne zahlédnout na jeho původní pozici před přeskočením doprostřed.
-/// Nejde ale o tvrdou garanci - appka reaguje asynchronně z jiného procesu, takže úplně
-/// vyloučit jednosnímkové bliknutí nejde (Windows nemá API na "polohu před prvním
-/// vykreslením cizího okna").
+/// Uses SetWinEventHook (EVENT_OBJECT_SHOW) to notice when a window is shown for the first time
+/// and centers it right away - the basis of "auto-center every newly opened window"
+/// (see TODO.md). EVENT_OBJECT_SHOW on purpose instead of EVENT_SYSTEM_FOREGROUND - it fires
+/// earlier (at ShowWindow(SW_SHOW), not after the window takes focus), so the user is less likely
+/// to catch a glimpse of the window at its original position before it jumps to the center.
+/// It is not a hard guarantee - the app reacts asynchronously from another process, so a one-frame
+/// flicker can't be ruled out entirely (Windows has no API for "position a foreign window
+/// before its first paint").
 ///
-/// Na rozdíl od WH_KEYBOARD_LL hooku (viz CLAUDE.md - incident 2026-09-23, appka si
-/// zablokovala klávesnici včetně Alt+Tab) jde čistě o OZNAMOVACÍ mechanismus - Windows
-/// tímhle jen informuje, nic to nepotlačuje ani neblokuje. I kdyby callback spadl nebo
-/// se s ním něco pokazilo, nemůže to ovlivnit klávesnici/systém jako minulý hook.
+/// Unlike the WH_KEYBOARD_LL hook (see CLAUDE.md - incident 2026-09-23, the app locked the
+/// keyboard including Alt+Tab) this is a purely NOTIFICATION mechanism - Windows only informs
+/// us, nothing is suppressed or blocked. Even if the callback crashed or misbehaved, it can't
+/// affect the keyboard/system like that earlier hook did.
 /// </summary>
 public sealed class NewWindowWatcher : IDisposable
 {
     private const string UwpFrameClassName = "ApplicationFrameWindow";
 
-    // UWP/moderní appky (Nastavení, Store...) si při otevření velikost a pozici nastaví
-    // až po chvíli (otevírací animace, obnovení uložené pozice) - v okamžiku SHOW mají
-    // jen přechodnou geometrii (Store např. 166x47 na 0,0). Proto se okno po zobrazení
-    // TrackingDuration sleduje a při samovolné změně velikosti se vycentruje znovu.
+    // UWP/modern apps (Settings, Store...) set their size and position only after a moment
+    // (opening animation, restoring a saved position) - at SHOW they only have transitional
+    // geometry (e.g. Store is 166x47 at 0,0). So after it is shown the window is tracked for
+    // TrackingDuration and re-centered whenever it changes its own size.
     private static readonly TimeSpan TrackingDuration = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(50);
 
-    // Běžná (ne-UWP) okna: původní ověřené chování - okamžité centrování, jeden rychlý
-    // retry (DWM v okamžiku SHOW občas ještě nemá spočtené DWMWA_EXTENDED_FRAME_BOUNDS)
-    // a jedna pozdější kontrola. Záměrně beze změny, ať se nerozbije to, co funguje.
+    // Regular (non-UWP) windows: the original, verified behavior - immediate centering, one quick
+    // retry (DWM sometimes hasn't computed DWMWA_EXTENDED_FRAME_BOUNDS yet at the SHOW moment)
+    // and one later check. Deliberately unchanged so that what works doesn't break.
     private static readonly TimeSpan GeometryRetryDelay = TimeSpan.FromMilliseconds(40);
     private static readonly TimeSpan AnimationSettleDelay = TimeSpan.FromMilliseconds(450);
 
-    // V téhle úvodní fázi (uživatel okno fyzicky nestihne chytit) se znovu centruje i při
-    // změně samotné pozice, později už jen při změně velikosti - jinak by appka
-    // bojovala s uživatelem, který okno hned po otevření táhne.
+    // In this initial phase (the user physically can't grab the window yet) the window is also
+    // re-centered when only its position changes; later only when its size changes - otherwise the
+    // app would fight a user who drags the window right after it opens.
     private static readonly TimeSpan PositionCorrectionWindow = TimeSpan.FromMilliseconds(600);
 
-    // UWP okno se po zavření jen schová (DWM cloak) a při znovuotevření dostane jen
-    // UNCLOAKED, ne SHOW. Stejné události ale vznikají při přepnutí virtuální plochy - to
-    // odkryje víc oken najednou, včetně běžných Win32 oken, která se jinak nikdy necloaknou -
-    // proto se do "dávky" počítají jen ne-UWP okna (Store otevře víc UWP rámců naráz).
+    // A closed UWP window is only hidden (DWM cloak) and on reopening it gets just UNCLOAKED, not
+    // SHOW. The same events occur on a virtual desktop switch - that uncloaks many windows at once,
+    // including regular Win32 windows that are otherwise never cloaked - so only non-UWP windows
+    // count toward the "burst" (Store opens several UWP frames at once).
     private static readonly TimeSpan UncloakBurstWindow = TimeSpan.FromMilliseconds(60);
 
     private readonly IWin32WindowService _windowService;
@@ -55,16 +55,16 @@ public sealed class NewWindowWatcher : IDisposable
     private readonly IWindowSizePolicy _sizePolicy;
     private readonly HashSet<IntPtr> _seenWindows = [];
     private readonly List<long> _recentUncloakTicks = [];
-    // Delegát musí zůstat naživu po celou dobu, co je hook nainstalovaný - jinak by ho
-    // GC mohl uvolnit a nativní volání z Windows by spadlo na uvolněný pointer.
+    // The delegate must stay alive for as long as the hook is installed - otherwise the GC could
+    // collect it and the native call from Windows would hit a freed pointer.
     private readonly WinEventDelegate _callback;
     private IntPtr _hookHandle;
     private IntPtr _cloakHookHandle;
 
-    // LOCATIONCHANGE chodí systémově extrémně často (každý pohyb kurzoru/okna), proto se
-    // hook instaluje jen po dobu, co se sleduje aspoň jedno UWP okno. Instalace i
-    // odinstalace musí proběhnout na vlákně s message loopem (UI), které hook nainstalovalo
-    // - proto _uiContext.
+    // LOCATIONCHANGE fires system-wide extremely often (every cursor/window move), so the hook is
+    // installed only while at least one UWP window is being tracked. Installing and uninstalling
+    // must happen on the thread with a message loop (UI) that installed the hook - hence
+    // _uiContext.
     private readonly Dictionary<IntPtr, TrackState> _tracked = [];
     private IntPtr _locationHookHandle;
     private SynchronizationContext? _uiContext;
@@ -94,8 +94,8 @@ public sealed class NewWindowWatcher : IDisposable
             return;
         }
 
-        // Rozsah DESTROY..HIDE zahrnuje i SHOW (0x8001-0x8003) - DESTROY/HIDE slouží k
-        // "zapomenutí" okna, viz OnWinEvent.
+        // The DESTROY..HIDE range also includes SHOW (0x8001-0x8003) - DESTROY/HIDE are used to
+        // "forget" a window, see OnWinEvent.
         _uiContext = SynchronizationContext.Current;
         _hookHandle = SetWinEventHook(EVENT_OBJECT_DESTROY, EVENT_OBJECT_HIDE, IntPtr.Zero, _callback, 0, 0, WINEVENT_OUTOFCONTEXT);
         _cloakHookHandle = SetWinEventHook(EVENT_OBJECT_UNCLOAKED, EVENT_OBJECT_UNCLOAKED, IntPtr.Zero, _callback, 0, 0, WINEVENT_OUTOFCONTEXT);
@@ -132,12 +132,12 @@ public sealed class NewWindowWatcher : IDisposable
 
     private void OnWinEvent(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
     {
-        // Callback běží volaný přímo z Windows (nativní kód) - výjimka by odsud neměla
-        // kam "spadnout" bezpečně, proto se chytá tady, ne až o úroveň výš.
+        // The callback is invoked directly from Windows (native code) - an exception would have nowhere
+        // safe to propagate, so it is caught here rather than a level up.
         try
         {
-            // idObject/idChild jiné než "samotné okno" jsou podprvky (titulek,
-            // scrollbar...), ty nás nezajímají.
+            // idObject/idChild other than "the window itself" are sub-elements (title bar,
+            // scrollbar...), we don't care about those.
             if (idObject != OBJID_WINDOW || idChild != 0 || hwnd == IntPtr.Zero)
             {
                 return;
@@ -147,10 +147,9 @@ public sealed class NewWindowWatcher : IDisposable
             {
                 case EVENT_OBJECT_DESTROY:
                 case EVENT_OBJECT_HIDE:
-                    // Zavřené/skryté okno zapomenout - UWP rámce se po zavření jen schovají
-                    // a při dalším otevření se znovu ukážou se stejným hwnd, a Windows navíc
-                    // hwnd hodnoty recykluje. Bez tohohle by se znovuotevřené okno přeskočilo
-                    // jako "už viděné" a necentrovalo se.
+                    // Forget a closed/hidden window - UWP frames are only hidden when closed and shown again
+                    // with the same hwnd on the next launch, and Windows also recycles hwnd values. Without
+                    // this a reopened window would be skipped as "already seen" and not centered.
                     _seenWindows.Remove(hwnd);
                     return;
 
@@ -165,12 +164,12 @@ public sealed class NewWindowWatcher : IDisposable
 
             if (!_seenWindows.Add(hwnd))
             {
-                return; // tohle okno už je zobrazené a zpracované
+                return; // this window is already shown and handled
             }
 
-            // Automaticky se centrují jen běžná okna se záhlavím - notifikace (toasty), OSD,
-            // overlaye, popupy a shellová okna (Windows.UI.Core.CoreWindow apod.) záhlaví
-            // nemají a jejich pozici určuje systém/appka záměrně (typicky pravý dolní roh).
+            // Only regular windows with a title bar are auto-centered - notifications (toasts), OSD,
+            // overlays, popups and shell windows (Windows.UI.Core.CoreWindow etc.) have no title bar and
+            // their position is chosen deliberately by the system/app (typically the bottom-right corner).
             if (_windowService.IsEligibleForActions(hwnd) && _windowService.HasTitleBar(hwnd))
             {
                 Begin(hwnd);
@@ -178,7 +177,7 @@ public sealed class NewWindowWatcher : IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Zpracování WinEvent pro okno {Handle} spadlo.", hwnd);
+            _logger.LogWarning(ex, "Handling the WinEvent for window {Handle} failed.", hwnd);
         }
     }
 
@@ -188,9 +187,9 @@ public sealed class NewWindowWatcher : IDisposable
 
         if (!IsUwpFrame(hwnd))
         {
-            // Uncloak běžného okna se záhlavím = přepnutí virtuální plochy, ne otevření
-            // nové appky. Okna bez záhlaví se nepočítají - typicky jde o Windows.UI.Core.
-            // CoreWindow, který se odkryje spolu se svým UWP rámcem při každém otevření.
+            // Uncloak of a regular titled window = a virtual desktop switch, not a new app opening.
+            // Windows without a title bar don't count - typically Windows.UI.Core.CoreWindow, which is
+            // uncloaked together with its UWP frame on every open.
             if (_windowService.HasTitleBar(hwnd) && _windowService.IsEligibleForActions(hwnd))
             {
                 lock (_recentUncloakTicks)
@@ -215,7 +214,7 @@ public sealed class NewWindowWatcher : IDisposable
     {
         try
         {
-            // Chvíli počkat, jestli nepřijdou UNCLOAKED běžných oken (přepnutí plochy).
+            // Wait a moment to see whether UNCLOAKED events of regular windows arrive (desktop switch).
             await Task.Delay(UncloakBurstWindow).ConfigureAwait(false);
             bool desktopSwitch;
             lock (_recentUncloakTicks)
@@ -232,7 +231,7 @@ public sealed class NewWindowWatcher : IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Auto-centrování znovuotevřeného okna {Handle} spadlo.", hwnd);
+            _logger.LogWarning(ex, "Auto-centering the reopened window {Handle} failed.", hwnd);
         }
     }
 
@@ -243,10 +242,10 @@ public sealed class NewWindowWatcher : IDisposable
             return;
         }
 
-        // Záměrně bez čekání - centrovat co nejdřív po zobrazení, ať uživatel okno
-        // pokud možno vůbec nezahlédne na jeho původní pozici (viz komentář u třídy).
-        // Debug level - narazit na cizí/přechodné okno (popup, tooltip...), kde
-        // centrování nedává smysl, je tady běžné, ne varování hodné tray balonku.
+        // Deliberately no waiting - center as soon as possible after it is shown so the user
+        // preferably never sees the window at its original position (see the class comment).
+        // Debug level - running into a foreign/transient window (popup, tooltip...) where centering
+        // makes no sense is common here, not worth a warning and a tray balloon.
         Center(hwnd);
         if (IsUwpFrame(hwnd))
         {
@@ -261,16 +260,16 @@ public sealed class NewWindowWatcher : IDisposable
     private void Center(IntPtr hwnd) =>
         WindowCenterer.TryCenter(_windowService, _logger, hwnd, LogLevel.Debug, _sizePolicy);
 
-    // Výjimka podle aplikace. U UWP rámce, který ještě nemá obsah, identita není známá -
-    // pak se okno centruje jako obvykle a výjimka se ověří znovu při dalším kroku sledování.
+    // Per-app exception. For a UWP frame that has no content yet the identity is unknown -
+    // the window is then centered as usual and the exception is re-checked at the next tracking step.
     private bool IsExcluded(IntPtr hwnd)
     {
         var app = _windowService.GetAppIdentity(hwnd);
         return app is not null && _rules.IsExcluded(app.Key);
     }
 
-    // Okno přes celou pracovní plochu (overlay Výstřižků, celoobrazovkové appky) se
-    // centrovat nemá - nedává to smysl a jen by ho posunulo mimo obrazovku.
+    // A window covering the whole work area (Snipping Tool overlay, full-screen apps) must not be
+    // centered - it makes no sense and would only push it off-screen.
     private bool CoversWholeWorkArea(IntPtr hwnd) =>
         _windowService.TryGetWindowRect(hwnd, out var rect) &&
         _windowService.TryGetMonitorWorkArea(hwnd, out var work) &&
@@ -300,7 +299,7 @@ public sealed class NewWindowWatcher : IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Auto-centrování nového okna {Handle} spadlo.", hwnd);
+            _logger.LogWarning(ex, "Auto-centering the new window {Handle} failed.", hwnd);
         }
     }
 
@@ -326,11 +325,11 @@ public sealed class NewWindowWatcher : IDisposable
                 if (_windowService.IsMinimized(hwnd) || _windowService.IsMaximized(hwnd) ||
                     !_windowService.TryGetWindowRect(hwnd, out var current))
                 {
-                    return; // okno zmizelo / uživatel s ním něco udělal
+                    return; // the window disappeared / the user did something with it
                 }
 
-                // Záložní cesta k rychlé reakci na LOCATIONCHANGE (viz OnLocationChanged) -
-                // centrovat až ve chvíli, kdy se okno na jeden poll přestane měnit.
+                // Fallback to the quick LOCATIONCHANGE reaction (see OnLocationChanged) -
+                // center only once the window has stopped changing for one poll.
                 if (current == previous)
                 {
                     CenterIfChanged(hwnd, state, current);
@@ -341,7 +340,7 @@ public sealed class NewWindowWatcher : IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Sledování nového okna {Handle} spadlo.", hwnd);
+            _logger.LogWarning(ex, "Tracking the new window {Handle} failed.", hwnd);
         }
         finally
         {
@@ -354,8 +353,8 @@ public sealed class NewWindowWatcher : IDisposable
         }
     }
 
-    // Reakce v řádu jednotek ms na to, jak si UWP okno samo změní velikost/pozici -
-    // skok doprostřed je pak sotva postřehnutelný (oproti čekání na polling).
+    // Reacts within a few ms to a UWP window changing its own size/position - the jump to the
+    // center is then barely noticeable (compared to waiting for polling).
     private void OnLocationChanged(IntPtr hwnd)
     {
         TrackState? state;
@@ -376,10 +375,10 @@ public sealed class NewWindowWatcher : IDisposable
         CenterIfChanged(hwnd, state, current);
     }
 
-    // Vycentruje okno, pokud se od posledního našeho umístění samo změnilo: změna velikosti
-    // vždy, změna samotné pozice jen v úvodní fázi (jinak by appka bojovala s uživatelem,
-    // který okno hned po otevření táhne). Vlastní přesun vyvolá další LOCATIONCHANGE,
-    // ten se přeskočí, protože rect už odpovídá Applied.
+    // Centers the window if it changed on its own since we last placed it: a size change always,
+    // a position-only change just in the initial phase (otherwise the app would fight a user who
+    // drags the window right after it opens). Our own move triggers another LOCATIONCHANGE,
+    // which is skipped because the rect already equals Applied.
     private void CenterIfChanged(IntPtr hwnd, TrackState state, WindowRect current)
     {
         lock (state)

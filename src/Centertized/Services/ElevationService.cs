@@ -5,15 +5,15 @@ using System.Security.Principal;
 namespace Centertized.Services;
 
 /// <summary>
-/// Režim "Spustit jako administrátor": Windows (UIPI) nedovolí neprivilegovanému procesu přesouvat
-/// okna procesů se zvýšenými právy, takže jediná cesta, jak centrovat třeba okna aplikací
-/// spuštěných jako správce, je sám běžet se zvýšenými právy. Zvýšení vždy vyžaduje UAC souhlas.
+/// "Run as administrator" mode: Windows (UIPI) doesn't let an unprivileged process move
+/// windows of elevated processes, so the only way to center e.g. windows of apps
+/// run as administrator is to run elevated ourselves. Elevation always needs UAC consent.
 /// </summary>
 public static class ElevationService
 {
     public const string RelaunchArgument = "--relaunch";
 
-    private const int ErrorCancelled = 1223; // uživatel v UAC dialogu zvolil "Ne"
+    private const int ErrorCancelled = 1223; // the user chose "No" in the UAC dialog
 
     public static bool IsElevated
     {
@@ -25,9 +25,9 @@ public static class ElevationService
     }
 
     /// <summary>
-    /// Spustí novou instanci appky se zvýšenými právy (UAC dialog). Vrací false, když uživatel UAC
-    /// odmítl - appka pak zůstane běžet, jak běžela. Nová instance si počká, než tahle skončí
-    /// (<see cref="RelaunchArgument"/>), protože obě sdílejí jednu pojmenovanou "single instance" zámek.
+    /// Starts a new instance of the app with elevated rights (UAC dialog). Returns false when the user
+    /// declined UAC - the app then keeps running as it was. The new instance waits until this one ends
+    /// (<see cref="RelaunchArgument"/>), because both share one named "single instance" lock.
     /// </summary>
     public static bool RelaunchElevated()
     {
@@ -47,14 +47,14 @@ public static class ElevationService
     }
 
     /// <summary>
-    /// Spustí novou instanci BEZ zvýšených práv. Z elevated procesu obyčejný Process.Start zdědí
-    /// zvýšení, proto se spuštění předá Průzkumníkovi, který běží s běžnými právy.
+    /// Starts a new instance WITHOUT elevated rights. A plain Process.Start from an elevated process inherits
+    /// the elevation, so the launch is handed to Explorer, which runs with normal rights.
     /// </summary>
     public static void RelaunchNotElevated()
     {
-        // Explorer neumí předat argumenty, takže nová instance nemůže čekat na uvolnění zámku sama -
-        // spuštění se proto o chvíli odloží, aby tahle (zvýšená) instance stihla skončit a uvolnit
-        // zámek i zkratky.
+        // Explorer can't pass arguments, so the new instance can't wait for the lock to be released itself -
+        // the launch is therefore delayed a bit so this (elevated) instance can finish and release
+        // the lock and the shortcuts.
         Process.Start(new ProcessStartInfo("cmd.exe", $"/c ping -n 3 127.0.0.1 >nul & explorer.exe \"{Environment.ProcessPath}\"")
         {
             CreateNoWindow = true,

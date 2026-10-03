@@ -1,0 +1,78 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <!-- Translation (ko) - overlays the English base, missing keys fall back to English. -->
+
+    <sys:String x:Key="Settings.Title">Centertized 설정</sys:String>
+
+    <sys:String x:Key="Section.Shortcuts">단축키</sys:String>
+    <sys:String x:Key="Section.AutoCenter">자동 가운데 맞춤</sys:String>
+    <sys:String x:Key="Section.Exceptions">자동 가운데 맞춤 예외</sys:String>
+    <sys:String x:Key="Section.General">일반</sys:String>
+    <sys:String x:Key="Section.About">정보</sys:String>
+
+    <sys:String x:Key="Action.center-active-window.Name">활성 창 가운데 맞춤</sys:String>
+    <sys:String x:Key="Action.center-active-window.Description">활성 창을 현재 모니터의 가운데로 옮깁니다.</sys:String>
+    <sys:String x:Key="Action.toggle-maximize-active-window.Name">활성 창 최대화/복원</sys:String>
+    <sys:String x:Key="Action.toggle-maximize-active-window.Description">활성 창을 최대화합니다. 다시 누르면 이전 크기와 위치로 복원됩니다.</sys:String>
+
+    <sys:String x:Key="General.StartWithWindows">Windows 시작 시 실행</sys:String>
+    <sys:String x:Key="General.StartMinimized">최소화된 상태로 시작</sys:String>
+    <sys:String x:Key="General.StartMinimized.Description">앱을 시작할 때 이 창을 표시하지 않음</sys:String>
+    <sys:String x:Key="General.AutoCenter">새 창 자동으로 가운데 맞춤</sys:String>
+    <sys:String x:Key="General.AutoCenter.Description">새로 열린 모든 창을 해당 모니터의 가운데로 자동으로 옮깁니다</sys:String>
+    <sys:String x:Key="General.RememberSizes">창 크기 기억</sys:String>
+    <sys:String x:Key="General.RememberSizes.Description">앱의 창이 마지막으로 지정한 크기로 열립니다. 자동 가운데 맞춤과 함께 작동합니다.</sys:String>
+    <sys:String x:Key="General.RememberSizes.Forget">모든 크기 잊기</sys:String>
+    <sys:String x:Key="General.RunAsAdmin">관리자 권한으로 실행</sys:String>
+    <sys:String x:Key="General.RunAsAdmin.Description">관리자 권한으로 실행 중인 앱의 창도 Centertized가 옮길 수 있게 합니다. Windows가 확인(UAC)을 요청하며 Centertized가 다시 시작됩니다.</sys:String>
+    <sys:String x:Key="General.Theme">테마</sys:String>
+    <sys:String x:Key="General.Theme.Description">밝게, 어둡게 또는 Windows 설정 따르기</sys:String>
+    <sys:String x:Key="General.Theme.System">시스템</sys:String>
+    <sys:String x:Key="General.Theme.Light">밝게</sys:String>
+    <sys:String x:Key="General.Theme.Dark">어둡게</sys:String>
+    <sys:String x:Key="General.Language">언어</sys:String>
+    <sys:String x:Key="General.Language.Description">앱 언어</sys:String>
+    <sys:String x:Key="General.Language.System">시스템</sys:String>
+
+    <sys:String x:Key="Exceptions.Intro">이 앱들의 새 창은 자동으로 가운데에 맞춰지지 않습니다.</sys:String>
+    <sys:String x:Key="Exceptions.Choose">앱 선택…</sys:String>
+    <sys:String x:Key="Exceptions.Empty">예외가 없습니다.</sys:String>
+    <sys:String x:Key="Exceptions.Remove">제거</sys:String>
+
+    <sys:String x:Key="Picker.Title">앱 선택</sys:String>
+    <sys:String x:Key="Picker.Hint">선택한 앱은 자동 가운데 맞춤에서 제외됩니다.</sys:String>
+    <sys:String x:Key="Picker.Search">앱 검색</sys:String>
+    <sys:String x:Key="Picker.Done">완료</sys:String>
+    <sys:String x:Key="Picker.Cancel">취소</sys:String>
+
+    <sys:String x:Key="About.Description">창 관리를 위한 Windows 네이티브 트레이 유틸리티입니다. 우선 활성 창 가운데 맞춤부터 시작합니다.</sys:String>
+    <sys:String x:Key="About.Version">버전 {0}</sys:String>
+    <sys:String x:Key="About.Title">Centertized 정보</sys:String>
+    <sys:String x:Key="About.License">라이선스: GPLv3</sys:String>
+    <sys:String x:Key="About.Close">닫기</sys:String>
+
+    <sys:String x:Key="Update.Title">업데이트</sys:String>
+    <sys:String x:Key="Update.Automatic">업데이트 자동 확인</sys:String>
+    <sys:String x:Key="Update.Automatic.Description">앱을 시작할 때 새 버전을 확인합니다</sys:String>
+    <sys:String x:Key="Update.Check">업데이트 확인</sys:String>
+    <sys:String x:Key="Update.Checking">확인 중…</sys:String>
+    <sys:String x:Key="Update.UpToDate">최신 버전입니다.</sys:String>
+    <sys:String x:Key="Update.Available">버전 {0}을(를) 사용할 수 있습니다.</sys:String>
+    <sys:String x:Key="Update.Download">다운로드 후 다시 시작</sys:String>
+    <sys:String x:Key="Update.Downloading">다운로드 중…</sys:String>
+    <sys:String x:Key="Update.Failed">업데이트를 확인하지 못했습니다.</sys:String>
+    <sys:String x:Key="Update.NotInstalled">업데이트는 설치된 Centertized에서만 작동합니다.</sys:String>
+
+    <sys:String x:Key="Hotkey.NotSet">설정 안 됨</sys:String>
+    <sys:String x:Key="Hotkey.NeedsModifier">Ctrl/Alt/Shift/Win 필요</sys:String>
+    <sys:String x:Key="Hotkey.UsedBy">사용 중: {0}</sys:String>
+    <sys:String x:Key="Hotkey.UsedElsewhere">다른 앱에서 사용 중</sys:String>
+
+    <sys:String x:Key="Tray.Open">Centertized 열기</sys:String>
+    <sys:String x:Key="Tray.About">정보</sys:String>
+    <sys:String x:Key="Tray.Close">닫기</sys:String>
+    <sys:String x:Key="Tray.StillRunning">트레이에서 계속 실행 중입니다. 아이콘을 클릭하면 언제든 설정을 다시 열 수 있습니다.</sys:String>
+
+    <sys:String x:Key="Notice.UpdateAvailable">버전 {0}을(를) 사용할 수 있습니다. 설정을 열어 업데이트하세요.</sys:String>
+</ResourceDictionary>

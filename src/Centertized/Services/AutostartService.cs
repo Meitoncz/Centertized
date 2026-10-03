@@ -4,10 +4,10 @@ using Microsoft.Win32;
 namespace Centertized.Services;
 
 /// <summary>
-/// Spouštění appky po přihlášení. Běžný režim: HKCU Run klíč (nevyžaduje admin práva, uživatel to
-/// vidí i v Task Manageru). Admin režim: úloha plánovače s nejvyššími oprávněními - Run klíč umí
-/// spustit jen neprivilegovaný proces a UAC by se pak ukázal při každém přihlášení. Úloha se zakládá
-/// a ruší jen ze zvýšené instance (schtasks to jinak nedovolí).
+/// Starting the app after logon. Normal mode: the HKCU Run key (needs no admin rights, the user can
+/// see it in Task Manager too). Admin mode: a scheduled task with the highest privileges - a Run key can
+/// only start an unprivileged process and UAC would then show at every logon. The task is created
+/// and removed only from an elevated instance (schtasks doesn't allow it otherwise).
 /// </summary>
 public sealed class AutostartService
 {
@@ -16,8 +16,8 @@ public sealed class AutostartService
     private const string TaskName = "Centertized";
 
     /// <summary>
-    /// Čte se vždy přímo ze systému (ne z cache) - stav se tak nerozjede, když
-    /// klíč/úlohu zvenku smaže uživatel nebo třeba antivirus.
+    /// Always read straight from the system (not from a cache) - so the state doesn't drift when
+    /// the key/task is deleted from outside by the user or e.g. an antivirus.
     /// </summary>
     public bool IsEnabled() => IsRunKeyPresent() || IsTaskPresent();
 
@@ -40,7 +40,7 @@ public sealed class AutostartService
         RemoveTask();
     }
 
-    /// <summary>Převede existující autostart na požadovaný způsob (Run klíč <-> úloha), když je zapnutý.</summary>
+    /// <summary>Converts an existing autostart to the requested kind (Run key <-> task) when it is enabled.</summary>
     public void Migrate(bool useElevatedTask)
     {
         if (IsEnabled())
@@ -77,7 +77,7 @@ public sealed class AutostartService
     {
         if (IsTaskPresent())
         {
-            RunSchtasks($"/Delete /TN \"{TaskName}\" /F"); // z neprivilegované instance selže - nevadí, zbude nepoužívaná úloha
+            RunSchtasks($"/Delete /TN \"{TaskName}\" /F"); // fails from a non-elevated instance - harmless, an unused task remains
         }
     }
 

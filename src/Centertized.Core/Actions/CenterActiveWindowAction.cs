@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Centertized.Core.Actions;
 
-/// <summary>V1 featura appky – vycentruje aktivně zaměřené okno na jeho aktuálním monitoru.</summary>
+/// <summary>The app's v1 feature – centers the active (focused) window on its current monitor.</summary>
 public sealed class CenterActiveWindowAction : IWindowAction
 {
     public const string ActionId = "center-active-window";
@@ -21,7 +21,7 @@ public sealed class CenterActiveWindowAction : IWindowAction
 
         if (!windowService.IsEligibleForActions(hwnd))
         {
-            context.Logger.LogDebug("Přeskočeno – okno {Handle} není způsobilé (vlastní okno appky, desktop, tool window...).", hwnd);
+            context.Logger.LogDebug("Skipped – window {Handle} is not eligible (the app's own window, desktop, tool window...).", hwnd);
             return Task.CompletedTask;
         }
 

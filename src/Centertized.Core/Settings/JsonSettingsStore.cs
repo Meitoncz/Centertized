@@ -5,8 +5,8 @@ namespace Centertized.Core.Settings;
 
 public sealed class JsonSettingsStore : ISettingsStore
 {
-    // Bez JsonStringEnumConverter by se ThemeMode/Backdrop ukládaly jako čísla (0,1,2) -
-    // nečitelné a křehké, kdyby se pořadí hodnot v enumu někdy změnilo.
+    // Without JsonStringEnumConverter ThemeMode/Backdrop would be stored as numbers (0,1,2) -
+    // unreadable and fragile if the order of the enum values ever changed.
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         WriteIndented = true,
@@ -15,7 +15,7 @@ public sealed class JsonSettingsStore : ISettingsStore
 
     private readonly string _filePath;
 
-    /// <param name="filePath">Volitelné – pro testy, ať nesahají na skutečné %AppData%.</param>
+    /// <param name="filePath">Optional – for tests, so they don't touch the real %AppData%.</param>
     public JsonSettingsStore(string? filePath = null)
     {
         _filePath = filePath ?? Path.Combine(
@@ -38,7 +38,7 @@ public sealed class JsonSettingsStore : ISettingsStore
         }
         catch (Exception)
         {
-            // Poškozený/neplatný soubor – radši spustit s výchozím nastavením než appku shodit.
+            // A corrupt/invalid file – better to start with the defaults than to crash the app.
             return new AppSettings();
         }
     }

@@ -2,7 +2,7 @@ using Centertized.Core.Hotkeys;
 
 namespace Centertized.Tests.Hotkeys;
 
-/// <summary>Registrar pro testy – simuluje "hotkey X je zvenku už obsazená" bez Win32 volání.</summary>
+/// <summary>A registrar for tests – simulates "hotkey X is already taken from outside" without Win32 calls.</summary>
 internal sealed class FakeHotkeyRegistrar : IHotkeyRegistrar
 {
     private readonly HashSet<Hotkey> _externallyTaken;

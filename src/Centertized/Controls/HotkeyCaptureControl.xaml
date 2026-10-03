@@ -3,13 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Name="Root"
              HorizontalAlignment="Right">
-    <!-- Button, ne obyčejný Border - potřebujeme spolehlivé klikání/fokus v
-         jakémkoliv kontejneru (CardControl apod.), ne ruční PreviewMouseLeftButtonDown.
-         Pevná šířka, ať karta neposkakuje mezi "Not set" a dlouhou zkratkou. -->
+    <!-- A Button, not a plain Border - we need reliable clicking/focus in
+              any container (CardControl etc.), not a manual PreviewMouseLeftButtonDown.
+              Fixed width so the card doesn't jump between "Not set" and a long shortcut. -->
     <Button x:Name="CaptureButton"
             Width="190">
-        <!-- TextBlock s trimováním jako pojistka pro delší hlášky (konflikty apod.),
-             ne jen Button.Content jako holý string. -->
+        <!-- A TextBlock with trimming as a safeguard for longer messages (conflicts etc.),
+                  not just Button.Content as a bare string. -->
         <TextBlock Text="{Binding DisplayText, ElementName=Root}"
                    TextTrimming="CharacterEllipsis"
                    TextAlignment="Center" />

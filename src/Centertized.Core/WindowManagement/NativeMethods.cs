@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Centertized.Core.WindowManagement;
 
-/// <summary>Veškerá syrová Win32/DWM P/Invoke volání pro práci s okny a monitory.</summary>
+/// <summary>All the raw Win32/DWM P/Invoke calls for working with windows and monitors.</summary>
 internal static class NativeMethods
 {
     public const int GWL_EXSTYLE = -20;

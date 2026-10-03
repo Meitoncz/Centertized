@@ -18,7 +18,7 @@ public class AppRulesServiceTests : IDisposable
         Assert.True(service.TryGetRememberedSize("notepad.exe", out var width, out var height));
         Assert.Equal((900, 600), (width, height));
 
-        // Nová instance nad stejným souborem = simulace restartu appky.
+        // A new instance over the same file = simulating an app restart.
         var reloaded = new AppRulesService(new JsonSettingsStore(_tempFile));
         Assert.True(reloaded.TryGetRememberedSize("notepad.exe", out width, out height));
         Assert.Equal((900, 600), (width, height));

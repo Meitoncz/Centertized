@@ -7,11 +7,11 @@ public class WindowSizeLearnerTests
     private static readonly WindowRect Work = new(0, 0, 3840, 2100);
 
     [Theory]
-    [InlineData(1920, 2100)] // půlka na výšku (Aero Snap doleva/doprava)
-    [InlineData(1280, 2100)] // třetina
-    [InlineData(3840, 1050)] // půlka na šířku
-    [InlineData(1920, 1050)] // čtvrtina
-    [InlineData(3840, 2100)] // přes celou plochu
+    [InlineData(1920, 2100)] // half, tall (Aero Snap left/right)
+    [InlineData(1280, 2100)] // third
+    [InlineData(3840, 1050)] // half, wide
+    [InlineData(1920, 1050)] // quarter
+    [InlineData(3840, 2100)] // the whole area
     public void SnappedOrFullscreenSizes_AreNotLearned(int width, int height)
     {
         var rect = new WindowRect(0, 0, width, height);

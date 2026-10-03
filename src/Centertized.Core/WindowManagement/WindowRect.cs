@@ -1,6 +1,6 @@
 namespace Centertized.Core.WindowManagement;
 
-/// <summary>Vlastní obdoba Win32 RECT – žádná závislost na WPF/WinForms typech.</summary>
+/// <summary>Our own counterpart of the Win32 RECT – no dependency on WPF/WinForms types.</summary>
 public readonly record struct WindowRect(int Left, int Top, int Right, int Bottom)
 {
     public int Width => Right - Left;

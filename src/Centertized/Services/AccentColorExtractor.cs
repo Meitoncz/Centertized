@@ -4,10 +4,10 @@ using System.Windows.Media.Imaging;
 namespace Centertized.Services;
 
 /// <summary>
-/// Vybere z ikony "hlavní" barvu, jakou by člověk ikoně přisoudil - ne prostý průměr (ten by z
-/// ikony s barevným logem na průhledném/šedém pozadí udělal špinavou šedou). Pixely se váží
-/// sytostí a jasem, rozdělí do odstínových košů a vyhraje ten nejsilnější; barva se zprůměruje
-/// jen z pixelů vítězného koše. Čistě šedé ikony dostanou střední šedou.
+/// Picks the "main" color from an icon, the one a person would assign to it - not a plain average (that would turn
+/// an icon with a colorful logo on a transparent/grey background into a muddy grey). Pixels are weighted
+/// by saturation and brightness, split into hue buckets and the strongest bucket wins; the color is averaged
+/// only from the pixels of the winning bucket. Purely grey icons get a mid grey.
 /// </summary>
 public static class AccentColorExtractor
 {
@@ -33,7 +33,7 @@ public static class AccentColorExtractor
             var alpha = pixels[i + 3] / 255.0;
             if (alpha < 0.5)
             {
-                continue; // průhledné okolí ikony není její barva
+                continue; // the transparent surroundings of the icon aren't its color
             }
 
             double b = pixels[i], g = pixels[i + 1], r = pixels[i + 2];
@@ -42,7 +42,7 @@ public static class AccentColorExtractor
             grayTotal += value;
             grayCount++;
 
-            // Skoro černé/bílé/šedé pixely (okraje, stíny, pozadí) barvu ikony netvoří.
+            // Almost black/white/grey pixels (edges, shadows, background) don't make up the icon's color.
             var w = saturation * value * alpha;
             if (saturation < 0.25 || value < 0.2 || w < 0.05)
             {
@@ -83,7 +83,7 @@ public static class AccentColorExtractor
         return EnsureVisible(color);
     }
 
-    // Puntík musí být čitelný na tmavém i světlém pozadí - moc tmavou barvu trochu zesvětlíme.
+    // The dot must be readable on both dark and light backgrounds - a too dark color is lightened a bit.
     private static Color EnsureVisible(Color color)
     {
         RgbToHsv(color.R, color.G, color.B, out var hue, out var saturation, out var value);

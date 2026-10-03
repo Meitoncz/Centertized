@@ -1,4 +1,7 @@
-# 🎯 Centertized
+<h1>
+  <img src="src/Centertized/Resources/centertized_icon.png" alt="" width="48" height="48" align="absmiddle">
+  Centertized
+</h1>
 
 A small native Windows tray app that puts windows exactly where you expect them:
 **centered on their monitor**. Press a shortcut to center the active window — or let

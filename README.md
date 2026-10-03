@@ -15,9 +15,9 @@ at a size I have to fix by hand every single time."
 
 ## ✨ What it does
 
-- 🎯 **Center the active window** with a global shortcut (default `Ctrl+Shift+C`, fully
-  configurable). The shortcut is checked against other apps at the moment you set it, so
-  you find out about a conflict right away instead of wondering why nothing happens.
+- 🎯 **Center the active window** with a global shortcut that you choose yourself. The
+  shortcut is checked against other apps at the moment you set it, so you find out about a
+  conflict right away instead of wondering why nothing happens.
 - 🪄 **Auto-center new windows** — every newly opened window lands in the middle of its
   monitor, before you have to reach for the mouse. Works for classic desktop apps *and*
   modern/Store apps (Settings, Microsoft Store, …). Notifications, overlays and other
@@ -30,6 +30,8 @@ at a size I have to fix by hand every single time."
   up in the main window, each with a dot in the color of the app's icon.
 - ⤢ **Toggle maximize** — a second shortcut maximizes the active window and, pressed
   again, brings it back to exactly where it was.
+- 🛡️ **Can move administrator windows too** — an optional "Run as administrator" mode (one
+  UAC prompt) lets Centertized center windows of apps that run elevated.
 - 🌗 **Looks like it belongs in Windows** — Fluent design with Mica backdrop, light / dark /
   follow-Windows theme that switches live, and a genuinely native tray menu.
 - 🌍 **12 languages**, switchable live and following your Windows language by default: English, Čeština, Deutsch, Español, Français, Italiano, Polski, Português (Brasil), Українська, 日本語, 한국어, 简体中文.
@@ -80,8 +82,10 @@ Needs the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 
    ![Tray menu](docs/images/tray-menu.png)
 
-2. **Shortcuts.** Click a shortcut button and press the combination you want. It needs at
-   least one of Ctrl / Alt / Shift / Win.
+2. **Shortcuts.** No shortcut is assigned out of the box (so Centertized never steals a
+   combination from another app). Click a shortcut button in **Shortcuts** and press the
+   combination you want, e.g. `Ctrl+Shift+C` to center the active window. It needs at least
+   one of Ctrl / Alt / Shift / Win.
 3. **Auto-center new windows.** Turn it on in **General**. From now on new windows open
    centered.
 4. **Remember window sizes.** Also in **General** (on by default): resize any window and
@@ -91,11 +95,20 @@ Needs the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 
    ![Choosing apps](docs/images/picker.png)
 
+6. **Administrator windows (optional).** Turn on **Run as administrator** in **General** if
+   you want Centertized to move windows of apps that run elevated. Windows asks for
+   confirmation (UAC) once and Centertized restarts; with *Start with Windows* it then
+   starts through a scheduled task, so you don't get a prompt at every logon.
+7. **Language.** Set it in **General** — by default Centertized follows your Windows
+   language.
+
 ## ⚠️ Things to watch out for
 
-- **Administrator windows can't be moved.** Windows doesn't let a normal app move the
-  windows of an elevated one (that's UIPI, a security boundary, not a bug). Centertized
-  runs without elevation on purpose.
+- **Administrator windows need administrator mode.** Windows doesn't let a normal app move
+  the windows of an elevated one (that's UIPI, a security boundary, not a bug). By default
+  Centertized runs without elevation, so those windows are left alone — turn on **Run as
+  administrator** (see above) if you need them. Running elevated means the app itself has
+  administrator rights, so only enable it if you want that.
 - **Windows without a title bar aren't auto-centered.** Auto-centering only touches regular
   windows with a title bar — that's what keeps notifications, overlays and pop-ups where
   they belong. The shortcut still works on anything. (Apps that draw their own custom title
@@ -111,6 +124,17 @@ Needs the [.NET 10 SDK](https://dotnet.microsoft.com/download).
   window before its first frame is drawn, so this can be minimized but not fully removed.
 - **Some apps position themselves.** An app that restores its own saved position after
   opening can fight the centering; add it to the exceptions list.
+
+## 🗄️ Where things live
+
+- **Settings:** `%AppData%\Centertized\settings.json` (plain JSON; per-app rules and
+  remembered sizes are in there too).
+- **Logs:** `%AppData%\Centertized\logs\` (daily files, the last 14 days are kept).
+- **Uninstall:** *Settings → Apps → Installed apps → Centertized* (or just delete the folder
+  of the portable build). Your settings stay in `%AppData%\Centertized` until you delete
+  them.
+- **Privacy:** Centertized has no telemetry and sends nothing anywhere. The only network
+  access is the optional update check, which asks GitHub Releases for a newer version.
 
 ## 🛠️ For developers
 
@@ -130,7 +154,7 @@ dotnet test src/Centertized.Tests
 ```
 
 - Every push and pull request runs `.github/workflows/ci.yml` (build + tests).
-- Pushing a version tag (`git tag v1.0.1 && git push --tags`) runs
+- Pushing a version tag (`git tag v1.0.1 && git push origin v1.0.1`) runs
   `.github/workflows/release.yml`: it builds a self-contained package, creates the
   installer and update packages with [Velopack](https://velopack.io), and publishes them as
   a GitHub Release — which is also where installed copies look for updates.

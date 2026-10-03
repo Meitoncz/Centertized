@@ -595,3 +595,13 @@ window is elevated (UIPI), so hotkeys on elevated windows must be pressed by han
 by the user: Ctrl+Shift+C now centers RHI. Not yet verified: disabling the mode (relaunch
 non-elevated) and the scheduled-task autostart at a real logon.
 
+
+### Settings layout: two columns (2026-10-03)
+
+`SettingsWindow` is now a 2-column `Grid` inside the `ScrollViewer` (default 1220x920, minimum
+1000x620; the scroll stays as a fallback for small windows/many exceptions). Left: Shortcuts,
+Auto-center (toggle + remembered sizes), Auto-center exceptions. Right: General (startup, admin,
+theme, language) and About (updates + about card). Column assignment is just XAML order — move a
+card between the two `StackPanel`s to rearrange. The README screenshot (`docs/images/settings.png`)
+must be taken with admin mode OFF in `settings.json` (an elevated instance can't be captured by a
+non-elevated script and yields a blank image) and with `Language: English`.

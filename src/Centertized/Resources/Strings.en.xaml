@@ -76,4 +76,6 @@
 
     <sys:String x:Key="General.RunAsAdmin">Run as administrator</sys:String>
     <sys:String x:Key="General.RunAsAdmin.Description">Lets Centertized move windows of apps that run as administrator. Windows asks for confirmation (UAC) and Centertized restarts.</sys:String>
+
+    <sys:String x:Key="Section.AutoCenter">Auto-center</sys:String>
 </ResourceDictionary>

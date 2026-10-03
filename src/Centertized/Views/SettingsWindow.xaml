@@ -4,8 +4,8 @@
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  xmlns:controls="clr-namespace:Centertized.Controls"
                  Title="{DynamicResource Settings.Title}"
-                 Height="620" Width="760"
-                 MinHeight="420" MinWidth="560"
+                 Height="920" Width="1220"
+                 MinHeight="620" MinWidth="1000"
                  WindowStartupLocation="CenterScreen"
                  ExtendsContentIntoTitleBar="True">
     <ui:FluentWindow.Resources>
@@ -40,8 +40,13 @@
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
                       controls:SmoothScrollBehavior.Enable="True">
-            <StackPanel Margin="24,12,24,24">
-
+            <Grid Margin="24,12,24,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="24" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
                 <ui:TextBlock Margin="0,0,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.Shortcuts}" />
                 <ItemsControl x:Name="ActionsList">
                     <ItemsControl.ItemTemplate>
@@ -63,27 +68,7 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.General}" />
-                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Power24}">
-                    <ui:CardControl.Header>
-                        <ui:TextBlock FontTypography="Body" Text="{DynamicResource General.StartWithWindows}" />
-                    </ui:CardControl.Header>
-                    <ui:ToggleSwitch x:Name="StartWithWindowsToggle"
-                                     Checked="StartWithWindowsToggle_Toggled"
-                                     Unchecked="StartWithWindowsToggle_Toggled" />
-                </ui:CardControl>
-                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon ArrowMinimize24}">
-                    <ui:CardControl.Header>
-                        <StackPanel>
-                            <ui:TextBlock FontTypography="Body" Text="{DynamicResource General.StartMinimized}" />
-                            <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                                          Text="{DynamicResource General.StartMinimized.Description}" />
-                        </StackPanel>
-                    </ui:CardControl.Header>
-                    <ui:ToggleSwitch x:Name="StartMinimizedToggle"
-                                     Checked="StartMinimizedToggle_Toggled"
-                                     Unchecked="StartMinimizedToggle_Toggled" />
-                </ui:CardControl>
+                <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.AutoCenter}" />
                 <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon AlignCenterHorizontal24}">
                     <ui:CardControl.Header>
                         <StackPanel>
@@ -114,6 +99,58 @@
                                          Checked="RememberSizesToggle_Toggled"
                                          Unchecked="RememberSizesToggle_Toggled" />
                     </StackPanel>
+                </ui:CardControl>
+                <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.Exceptions}" />
+                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Prohibited24}">
+                    <ui:CardControl.Header>
+                        <ui:TextBlock FontTypography="Body" Text="{DynamicResource Exceptions.Intro}" TextWrapping="Wrap" />
+                    </ui:CardControl.Header>
+                    <Button Content="{DynamicResource Exceptions.Choose}" Click="ChooseAppsButton_Click" />
+                </ui:CardControl>
+                <ui:TextBlock x:Name="ExceptionsEmptyText" Margin="0,0,0,12"
+                              Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                              Text="{DynamicResource Exceptions.Empty}" />
+                <ItemsControl x:Name="ExceptionsList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:CardControl Margin="0,0,0,12">
+                                <ui:CardControl.Header>
+                                    <StackPanel Orientation="Horizontal">
+                                        <!-- Barva puntíku = dominantní barva ikony aplikace (viz AccentColorExtractor). -->
+                                        <Ellipse Width="10" Height="10" Margin="0,0,10,0" VerticalAlignment="Center"
+                                                 Fill="{Binding AccentBrush}" />
+                                        <ui:TextBlock FontTypography="BodyStrong" Text="{Binding DisplayName}" />
+                                    </StackPanel>
+                                </ui:CardControl.Header>
+                                <Button Tag="{Binding Key}" Content="{DynamicResource Exceptions.Remove}"
+                                        Click="ExceptionRemove_Click" />
+                            </ui:CardControl>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                <ui:TextBlock Margin="0,0,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.General}" />
+                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Power24}">
+                    <ui:CardControl.Header>
+                        <ui:TextBlock FontTypography="Body" Text="{DynamicResource General.StartWithWindows}" />
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch x:Name="StartWithWindowsToggle"
+                                     Checked="StartWithWindowsToggle_Toggled"
+                                     Unchecked="StartWithWindowsToggle_Toggled" />
+                </ui:CardControl>
+                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon ArrowMinimize24}">
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <ui:TextBlock FontTypography="Body" Text="{DynamicResource General.StartMinimized}" />
+                            <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                          Text="{DynamicResource General.StartMinimized.Description}" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch x:Name="StartMinimizedToggle"
+                                     Checked="StartMinimizedToggle_Toggled"
+                                     Unchecked="StartMinimizedToggle_Toggled" />
                 </ui:CardControl>
                 <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon ShieldKeyhole24}">
                     <ui:CardControl.Header>
@@ -159,35 +196,6 @@
                     </ComboBox>
                 </ui:CardControl>
 
-                <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.Exceptions}" />
-                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Prohibited24}">
-                    <ui:CardControl.Header>
-                        <ui:TextBlock FontTypography="Body" Text="{DynamicResource Exceptions.Intro}" TextWrapping="Wrap" />
-                    </ui:CardControl.Header>
-                    <Button Content="{DynamicResource Exceptions.Choose}" Click="ChooseAppsButton_Click" />
-                </ui:CardControl>
-                <ui:TextBlock x:Name="ExceptionsEmptyText" Margin="0,0,0,12"
-                              Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                              Text="{DynamicResource Exceptions.Empty}" />
-                <ItemsControl x:Name="ExceptionsList">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <ui:CardControl Margin="0,0,0,12">
-                                <ui:CardControl.Header>
-                                    <StackPanel Orientation="Horizontal">
-                                        <!-- Barva puntíku = dominantní barva ikony aplikace (viz AccentColorExtractor). -->
-                                        <Ellipse Width="10" Height="10" Margin="0,0,10,0" VerticalAlignment="Center"
-                                                 Fill="{Binding AccentBrush}" />
-                                        <ui:TextBlock FontTypography="BodyStrong" Text="{Binding DisplayName}" />
-                                    </StackPanel>
-                                </ui:CardControl.Header>
-                                <Button Tag="{Binding Key}" Content="{DynamicResource Exceptions.Remove}"
-                                        Click="ExceptionRemove_Click" />
-                            </ui:CardControl>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
                 <ui:TextBlock Margin="0,24,0,8" FontTypography="BodyStrong" Text="{DynamicResource Section.About}" />
                 <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon ArrowSync24}">
                     <ui:CardControl.Header>
@@ -225,7 +233,8 @@
                                   Text="{DynamicResource About.Description}"
                                   TextWrapping="Wrap" />
                 </ui:CardExpander>
-            </StackPanel>
+                </StackPanel>
+            </Grid>
         </ScrollViewer>
     </Grid>
 </ui:FluentWindow>
